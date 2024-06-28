@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:prova/destinationscreen.dart';
 import 'tripscreen.dart';
 import 'destinationscreen.dart';
 import 'searchscreen.dart';
+import 'statisticsscreen.dart';
 
 void main() {
   runApp(MyApp());
@@ -54,7 +54,12 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(),
             ),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => StatisticsScreen()), // Naviga alla schermata delle statistiche
+                );
+              },
               child: Text('Statistiche'),
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.black,
@@ -198,18 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _destinationContent() {
-    return Center(
-      child: Text('Destinazioni', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  Widget _searchContent() {
-    return Center(
-      child: Text('Ricerca', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
     );
   }
 }
