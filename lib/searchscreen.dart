@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 class SearchTripsScreen extends StatefulWidget {
+  const SearchTripsScreen({super.key});
+
   @override
   _SearchTripsScreenState createState() => _SearchTripsScreenState();
 }
 
 class _SearchTripsScreenState extends State<SearchTripsScreen> {
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   List<String> trips = [
     'Viaggio a Parigi',
     'Vacanza in Giappone',
@@ -34,18 +36,18 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
       context: context,
       builder: (BuildContext context) {
         return Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
+              const Text(
                 'Filtri',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 16),
-              Text('Data Partenza'),
-              SizedBox(height: 8),
+              const SizedBox(height: 16),
+              const Text('Data Partenza'),
+              const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: () {
                   showDatePicker(
@@ -65,9 +67,9 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
                     ? '${startDate!.day}/${startDate!.month}/${startDate!.year}'
                     : 'Seleziona Data'),
               ),
-              SizedBox(height: 16),
-              Text('Data Ritorno'),
-              SizedBox(height: 8),
+              const SizedBox(height: 16),
+              const Text('Data Ritorno'),
+              const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: () {
                   showDatePicker(
@@ -87,9 +89,9 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
                     ? '${endDate!.day}/${endDate!.month}/${endDate!.year}'
                     : 'Seleziona Data'),
               ),
-              SizedBox(height: 16),
-              Text('Tipo Viaggio'),
-              SizedBox(height: 8),
+              const SizedBox(height: 16),
+              const Text('Tipo Viaggio'),
+              const SizedBox(height: 8),
               DropdownButton<String>(
                 value: tripType,
                 onChanged: (value) {
@@ -105,7 +107,7 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
                   );
                 }).toList(),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -113,18 +115,18 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
                     onPressed: () {
                       Navigator.of(context).pop(); // Chiudi il modal
                     },
-                    child: Text('Annulla'),
                     style: ElevatedButton.styleFrom(
                     ),
+                    child: const Text('Annulla'),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () {
                       // Applica i filtri desiderati
                       applyFilters();
                       Navigator.of(context).pop(); // Chiudi il modal
                     },
-                    child: Text('Mostra'),
+                    child: const Text('Mostra'),
                   ),
                 ],
               ),
@@ -154,13 +156,13 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Ricerca Viaggi',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_alt),
+            icon: const Icon(Icons.filter_alt),
             onPressed: () {
               showFilterOptions(context);
             },
@@ -177,7 +179,7 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
               onChanged: (value) {
                 filterTrips(value);
               },
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Cerca viaggio',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
