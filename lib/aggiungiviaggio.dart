@@ -29,12 +29,18 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
   }
 
   Future<void> _loadDestinazioni() async {
-    final destinazioni = await DatabaseHelper.instance.getDestinations();
-    setState(() {
-      _destinazioni = destinazioni;
-    });
+    try {
+      final destinazioni = await DatabaseHelper.instance.getDestinations();
+      setState(() {
+        _destinazioni = destinazioni;
+        if (_destinazioni.isNotEmpty) {
+          _selectedDestinazione = _destinazioni.first.nome;
+        }
+      });
+    } catch (e) {
+      print('Error loading destinations: $e');
+    }
   }
-
 
   Future<void> _addViaggio() async {
     try {
@@ -49,7 +55,19 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       final lastId = await DatabaseHelper.instance.getLastViaggioId();
       final count = lastId + 1;
 
-      final newViaggio = viaggio(id_viaggio: count, titolo: titolo, data_inizio: formatter.parse(dataInizio), data_fine: formatter.parse(dataFine), note: note, itinerario: itinerario, destinazione: _selectedDestinazione ?? '');
+      if (_selectedDestinazione == null) {
+        throw Exception('Per favore seleziona una destinazione');
+      }
+
+      final newViaggio = viaggio(
+        id_viaggio: count,
+        titolo: titolo,
+        data_inizio: formatter.parse(dataInizio),
+        data_fine: formatter.parse(dataFine),
+        note: note,
+        itinerario: itinerario,
+        destinazione: _selectedDestinazione!,
+      );
 
       await DatabaseHelper.instance.insertViaggio(newViaggio);
       print('Added Trip: $titolo');
@@ -88,6 +106,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
               DropdownButtonFormField<String>(
                 hint: const Text('Seleziona una destinazione'),
                 decoration: const InputDecoration(labelText: 'Destinazione Viaggio'),
+                value: _selectedDestinazione,
                 items: _destinazioni.map((destinazione) {
                   return DropdownMenuItem<String>(
                     value: destinazione.nome,
@@ -174,7 +193,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    _addViaggio();
+                    await _addViaggio();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Viaggio aggiunto con successo')),
                     );

@@ -20,11 +20,15 @@ class _TripsScreenState extends State<TripsScreen> {
     _loadViaggi();
   }
 
-
   Future<void> _loadViaggi() async {
     try {
       final db = DatabaseHelper.instance;
       final viaggiList = await db.getViaggi();
+
+      // Log dei dati caricati per il debug
+      for (var viaggio in viaggiList) {
+        print('Loaded trip: ${viaggio.titolo}, ${viaggio.data_inizio}, ${viaggio.data_fine}, ${viaggio.destinazione}');
+      }
 
       setState(() {
         _viaggi = viaggiList;
@@ -74,7 +78,6 @@ class _TripsScreenState extends State<TripsScreen> {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AggiungiViaggio()),
-
           );
           if(result == true) {
             _refreshViaggi(); // Ricarica la lista dei viaggi dopo l'aggiunta di un nuovo viaggio
@@ -85,132 +88,3 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
 }
-
-
-
-/*child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Viaggi Pianificati',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 250, // Altezza delle card
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal, // Scrolling orizzontale
-                itemCount: _viaggi.length,
-                itemBuilder: (context, index) {
-                  final viaggioItem = _viaggi[index];
-                  return GestureDetector(
-                    onTap: () {
-                      // Implementa la logica per modificare il viaggio
-                    },
-                    child: Container(
-                      width: 200, // Larghezza delle card
-                      margin: const EdgeInsets.only(right: 10),
-                      child: Card(
-                        color: const Color(0xffdcdcf7),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(10),
-                                topRight: Radius.circular(10),
-                              ),
-                              child: Image.asset(
-                                'assets/images/viaggio${index + 1}.png',
-                                height: 150,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                viaggioItem.titolo,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                              child: Text(
-                                viaggioItem.itinerario,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Viaggi Effettuati',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.builder(
-                scrollDirection: Axis.vertical, // Scrolling verticale
-                itemCount: _viaggi.length,
-                itemBuilder: (context, index) {
-                  final viaggioItem = _viaggi[index];
-                  return GestureDetector(
-                    onTap: () {
-                      // Implementa la logica per modificare il viaggio
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: Card(
-                        color: const Color(0xffdcdcf7),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(10),
-                                topRight: Radius.circular(10),
-                              ),
-                              child: Image.asset(
-                                'assets/images/viaggio${index + 1}.png',
-                                height: 120,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                viaggioItem.titolo,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                              child: Text(
-                                viaggioItem.itinerario,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),*/

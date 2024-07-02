@@ -22,7 +22,6 @@ class DatabaseHelper {
     );
   }
 
-
   Future<void> _createTables(Database db, int version) async {
     await db.execute('''
       CREATE TABLE viaggio(
@@ -79,8 +78,6 @@ class DatabaseHelper {
     ''');
   }
 
-  // Funzioni di inserimento, recupero e cancellazione per le tabelle...
-
   Future<void> insertViaggio(viaggio viaggio) async {
     final db = await database;
     await db.insert(
@@ -101,7 +98,6 @@ class DatabaseHelper {
 
   Future<void> insertDestinazione(destinazione destinazione) async {
     final db = await database;
-
     await db.insert(
       'destinazione',
       destinazione.toMap(),
@@ -176,31 +172,13 @@ class DatabaseHelper {
 
   Future<List<viaggio>> getViaggi() async {
     final db = await database;
-    final List<Map<String, Object?>> maps = await db.rawQuery('''
-    SELECT 
-      v.id_viaggio,
-      v.titolo,
-      v.data_inizio,
-      v.data_fine,
-      v.note,
-      v.itinerario,
-      d.nome AS destinazione 
-    FROM viaggio v
-    JOIN destinazione d ON v.destinazione = d.nome
-  ''');
+    final List<Map<String, dynamic>> maps = await db.query('viaggio');
 
     return List.generate(maps.length, (i) {
-      return viaggio(
-        id_viaggio: maps[i]['id_viaggio'] as int,
-        titolo: maps[i]['titolo'] as String,
-        data_inizio: DateTime.parse(maps[i]['data_inizio'] as String),
-        data_fine: DateTime.parse(maps[i]['data_fine'] as String),
-        note: maps[i]['note'] as String,
-        itinerario: maps[i]['itinerario'] as String,
-        destinazione: maps[i]['destinazione'] as String, // Usa il nome della destinazione recuperato dalla query
-      );
+      return viaggio.fromMap(maps[i]);
     });
   }
+
 
   Future<int> getLastViaggioId() async {
     final db = await database;
@@ -217,5 +195,4 @@ class DatabaseHelper {
       whereArgs: [id],
     );
   }
-
 }
