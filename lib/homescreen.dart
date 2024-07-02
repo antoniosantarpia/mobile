@@ -120,7 +120,6 @@ class _HomePageContentState extends State<HomePageContent> {
                       destinazione.nome,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios),
                   ),
                 );
               },

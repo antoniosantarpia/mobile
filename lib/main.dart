@@ -3,7 +3,7 @@ import 'tripscreen.dart';
 import 'destinationscreen.dart';
 import 'searchscreen.dart';
 import 'statisticsscreen.dart';
-import 'homescreen.dart'; // Importa il nuovo file homescreen.dart
+import 'homescreen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -47,7 +47,12 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.black87,
         title: Row(
           children: [
-            const SizedBox(width: 16),
+            const SizedBox(width: 3),
+            Image.asset(
+              'assets/images/icon.png', // Percorso dell'icona aggiunta
+              height: 53, // Altezza desiderata dell'icona
+            ),
+            const SizedBox(width: 8),
             const Text(
               'Travel Manager',
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
