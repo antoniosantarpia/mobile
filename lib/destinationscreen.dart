@@ -27,7 +27,6 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
       setState(() {
         destinations = destinationMaps.map((map) {
           return destinazione(
-            id_destinazione: map['id_destinazione'] as int,
             nome: map['nome'] as String,
             tripCount: map['trip_count'] as int,
           );
@@ -41,10 +40,10 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
   Future<void> _addDestination() async {
     try {
       final nome = _nomeController.text;
-      final lastId = await DatabaseHelper.instance.getLastDestinazioneId();
-      final count = lastId + 1;
+      //final lastId = await DatabaseHelper.instance.getLastDestinazioneId();
+      //final count = lastId + 1;
 
-      final newDestination = destinazione(id_destinazione: count, nome: nome, tripCount: 0);
+      final newDestination = destinazione(nome: nome, tripCount: 0);
 
       await DatabaseHelper.instance.insertDestinazione(newDestination);
       print('Added destination: $nome');
@@ -55,10 +54,10 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
     }
   }
 
-  Future<void> _deleteDestination(int id) async {
+  Future<void> _deleteDestination(String nome) async {
     try {
-      await DatabaseHelper.instance.deleteDestinazione(id);
-      print('Deleted destination with id: $id');
+      await DatabaseHelper.instance.deleteDestinazione(nome);
+      print('Deleted destination with name: $nome');
       await _loadDestinations();
     } catch (e) {
       print('Error deleting destination: $e');
@@ -115,7 +114,7 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                         },
                       );
                       if (result == true) {
-                        await _deleteDestination(destination.id_destinazione);
+                        await _deleteDestination(destination.nome);
                       }
                     },
                   ),

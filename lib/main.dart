@@ -77,11 +77,11 @@ class _HomeScreenState extends State<HomeScreen> {
             _selectedIndex = index;
           });
         },
-        children: [
-          const HomePageContent(),
-          const TripsScreen(),
-          const DestinationsScreen(),
-          const SearchTripsScreen(),
+        children: const [
+          HomePageContent(),
+          TripsScreen(),
+          DestinationsScreen(),
+          SearchTripsScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

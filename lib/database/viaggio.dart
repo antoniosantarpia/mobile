@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 
 class viaggio {
     final int id_viaggio;
@@ -18,15 +19,16 @@ class viaggio {
       required this.destinazione,
      });
 
+
+
     Map<String, Object?> toMap() {
       return {
         'id_viaggio': id_viaggio,
         'titolo': titolo,
-        'data_inizio': data_inizio,
-        'data_fine': data_fine,
-        'note': note,
         'itinerario': itinerario,
-        'destinazione': destinazione
+        'data_inizio': DateFormat('yyyy-MM-dd').format(data_inizio), // Converte la data in String
+        'data_fine': DateFormat('yyyy-MM-dd').format(data_fine), // Converte la data in String
+        'destinazione': destinazione,
       };
     }
 

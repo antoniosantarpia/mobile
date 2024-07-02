@@ -1,5 +1,5 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import 'viaggio.dart';
 import 'categoria.dart';
 import 'recensione.dart';
@@ -17,38 +17,23 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     return openDatabase(
       join(await getDatabasesPath(), 'miodatabase.db'),
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
-      version: 2,
+      onCreate: _createTables,
+      version: 1,
     );
   }
 
-  Future<void> _onCreate(Database db, int version) async {
-    await _createTables(db);
-  }
 
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Drop old tables if they exist
-    await db.execute('DROP TABLE IF EXISTS viaggio');
-    await db.execute('DROP TABLE IF EXISTS foto');
-    await db.execute('DROP TABLE IF EXISTS destinazione');
-    await db.execute('DROP TABLE IF EXISTS recensione');
-    await db.execute('DROP TABLE IF EXISTS categoria');
-    await db.execute('DROP TABLE IF EXISTS viaggio_categoria');
-
-    // Recreate tables
-    await _createTables(db);
-  }
-
-  Future<void> _createTables(Database db) async {
+  Future<void> _createTables(Database db, int version) async {
     await db.execute('''
       CREATE TABLE viaggio(
         id_viaggio INTEGER PRIMARY KEY, 
         titolo VARCHAR(30) NOT NULL, 
+        note TEXT,
         itinerario TEXT, 
         data_inizio DATE NOT NULL, 
         data_fine DATE NOT NULL, 
-        destinazione INTEGER NOT NULL
+        destinazione VARCHAR(20) NOT NULL,
+        FOREIGN KEY(destinazione) REFERENCES destinazione(nome)
       );
     ''');
 
@@ -62,8 +47,7 @@ class DatabaseHelper {
 
     await db.execute('''
       CREATE TABLE destinazione(
-        id_destinazione INTEGER PRIMARY KEY, 
-        nome VARCHAR(20) UNIQUE NOT NULL,
+        nome VARCHAR(20) PRIMARY KEY,
         tripCount INTEGER NOT NULL DEFAULT 0
       );
     ''');
@@ -158,7 +142,6 @@ class DatabaseHelper {
 
     return List.generate(maps.length, (i) {
       return destinazione(
-        id_destinazione: maps[i]['id_destinazione'] as int,
         nome: maps[i]['nome'] as String,
         tripCount: maps[i]['tripCount'] as int,
       );
@@ -168,10 +151,10 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getDestinationWithTripCount() async {
     final db = await database;
     return await db.rawQuery('''
-      SELECT d.id_destinazione, d.nome, COUNT(v.id_viaggio) as trip_count
+      SELECT d.nome, COUNT(v.id_viaggio) as trip_count
       FROM destinazione d
-      LEFT JOIN viaggio v ON d.id_destinazione = v.destinazione
-      GROUP BY d.id_destinazione, d.nome
+      LEFT JOIN viaggio v ON d.nome = v.destinazione
+      GROUP BY d.nome
     ''');
   }
 
@@ -182,12 +165,57 @@ class DatabaseHelper {
     return id ?? 0;  // Se il valore è null, restituisce 0
   }
 
-  Future<void> deleteDestinazione(int id) async {
+  Future<void> deleteDestinazione(String nome) async {
     final db = await database;
     await db.delete(
       'destinazione',
-      where: 'id_destinazione = ?',
+      where: 'nome = ?',
+      whereArgs: [nome],
+    );
+  }
+
+  Future<List<viaggio>> getViaggi() async {
+    final db = await database;
+    final List<Map<String, Object?>> maps = await db.rawQuery('''
+    SELECT 
+      v.id_viaggio,
+      v.titolo,
+      v.data_inizio,
+      v.data_fine,
+      v.note,
+      v.itinerario,
+      d.nome AS destinazione 
+    FROM viaggio v
+    JOIN destinazione d ON v.destinazione = d.nome
+  ''');
+
+    return List.generate(maps.length, (i) {
+      return viaggio(
+        id_viaggio: maps[i]['id_viaggio'] as int,
+        titolo: maps[i]['titolo'] as String,
+        data_inizio: DateTime.parse(maps[i]['data_inizio'] as String),
+        data_fine: DateTime.parse(maps[i]['data_fine'] as String),
+        note: maps[i]['note'] as String,
+        itinerario: maps[i]['itinerario'] as String,
+        destinazione: maps[i]['destinazione'] as String, // Usa il nome della destinazione recuperato dalla query
+      );
+    });
+  }
+
+  Future<int> getLastViaggioId() async {
+    final db = await database;
+    var result = await db.rawQuery('SELECT MAX(id_viaggio) as max_id FROM viaggio');
+    int? id = result.first['max_id'] as int?;
+    return id ?? 0;  // Se il valore è null, restituisce 0
+  }
+
+  Future<void> deleteViaggio(int id) async {
+    final db = await database;
+    await db.delete(
+      'viaggio',
+      where: 'id_viaggio = ?',
       whereArgs: [id],
     );
   }
+
 }

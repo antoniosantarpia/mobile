@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:prova/aggiungiviaggio.dart';
 
 class HomePageContent extends StatelessWidget {
   const HomePageContent({super.key});
@@ -98,7 +99,12 @@ class HomePageContent extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AggiungiViaggio()), // Naviga alla schermata delle statistiche
+                  );
+                },
                 child: const Text('Aggiungi Viaggio'),
               ),
               ElevatedButton(
