@@ -187,6 +187,27 @@ class DatabaseHelper {
     return id ?? 0;  // Se il valore è null, restituisce 0
   }
 
+  Future<List<destinazione>> getUltimiViaggiDestinazioni(int limit) async {
+    final db = await database;
+    final List<Map<String, Object?>> maps = await db.rawQuery('''
+    SELECT d.nome, COUNT(v.id_viaggio) as trip_count
+    FROM destinazione d
+    JOIN viaggio v ON d.nome = v.destinazione
+    WHERE v.data_fine <= date('now')
+    GROUP BY d.nome
+    ORDER BY MAX(v.data_fine) DESC
+    LIMIT $limit
+  ''');
+
+    return List.generate(maps.length, (i) {
+      return destinazione(
+        nome: maps[i]['nome'] as String,
+        tripCount: maps[i]['trip_count'] as int,
+      );
+    });
+  }
+
+
   Future<void> deleteViaggio(int id) async {
     final db = await database;
     await db.delete(

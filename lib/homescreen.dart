@@ -1,8 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:prova/aggiungiviaggio.dart';
+import 'database/database_helper.dart';
+import 'database/viaggio.dart';
+import 'database/destinazione.dart';
 
-class HomePageContent extends StatelessWidget {
+class HomePageContent extends StatefulWidget {
   const HomePageContent({super.key});
+
+  @override
+  _HomePageContentState createState() => _HomePageContentState();
+}
+
+class _HomePageContentState extends State<HomePageContent> {
+  List<viaggio> _viaggi = [];
+  List<destinazione> _destinazioni = [];
+  viaggio? _prossimoViaggio;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final db = DatabaseHelper.instance;
+    final viaggiList = await db.getViaggi();
+    final destinazioniList = await db.getUltimiViaggiDestinazioni(2);
+
+    // Trova il viaggio più vicino alla data attuale come "Prossimo Viaggio"
+    viaggio? prossimoViaggio;
+    DateTime now = DateTime.now();
+    viaggiList.forEach((viaggio) {
+      if (prossimoViaggio == null ||
+          viaggio.data_inizio.difference(now).abs().compareTo(prossimoViaggio!.data_inizio.difference(now).abs()) < 0) {
+        prossimoViaggio = viaggio;
+      }
+    });
+
+    setState(() {
+      _viaggi = viaggiList;
+      _destinazioni = destinazioniList;
+      _prossimoViaggio = prossimoViaggio;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,56 +57,49 @@ class HomePageContent extends StatelessWidget {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 250, // Altezza delle card
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 1, // Numero di viaggi pianificati
-              itemBuilder: (context, index) {
-                return Container(
-                  width: 340, // Larghezza delle card
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Card(
-                    color: const Color(0xffdcdcf7),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+          _prossimoViaggio != null
+              ? Container(
+            width: 340, // Larghezza della card
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            child: Card(
+              color: const Color(0xffdcdcf7),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      topRight: Radius.circular(10),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(10),
-                            topRight: Radius.circular(10),
-                          ),
-                          child: Image.asset(
-                            'assets/images/viaggio${index + 1}.png',
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Viaggio ${index + 1}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                          child: Text(
-                            'Dettagli del viaggio ${index + 1}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ],
+                    child: Image.asset(
+                      'assets/images/viaggio1.png', // Sostituire con il percorso corretto dell'immagine
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                );
-              },
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      _prossimoViaggio!.titolo,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                    child: Text(
+                      'Dal ${DateFormat('dd/MM/yyyy').format(_prossimoViaggio!.data_inizio)} al ${DateFormat('dd/MM/yyyy').format(_prossimoViaggio!.data_fine)}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          )
+              : const SizedBox(height: 0), // Se non ci sono viaggi, non mostra nulla
           const SizedBox(height: 16),
           const Text(
             'Ultime Destinazioni',
@@ -74,8 +108,9 @@ class HomePageContent extends StatelessWidget {
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
-              itemCount: 2, // Numero di ultime destinazioni
+              itemCount: _destinazioni.length > 2 ? 2 : _destinazioni.length, // Mostra al massimo due destinazioni
               itemBuilder: (context, index) {
+                final destinazione = _destinazioni[index];
                 return Card(
                   color: const Color(0xffa9b9de),
                   margin: const EdgeInsets.symmetric(vertical: 8),
@@ -84,10 +119,9 @@ class HomePageContent extends StatelessWidget {
                   ),
                   child: ListTile(
                     title: Text(
-                      'Destinazione ${index + 1}',
+                      destinazione.nome,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text('Dettagli della destinazione ${index + 1}'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                   ),
                 );
@@ -102,8 +136,12 @@ class HomePageContent extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AggiungiViaggio()), // Naviga alla schermata delle statistiche
-                  );
+                    MaterialPageRoute(builder: (context) => const AggiungiViaggio()),
+                  ).then((value) {
+                    if (value == true) {
+                      _loadData();
+                    }
+                  });
                 },
                 child: const Text('Aggiungi Viaggio'),
               ),
