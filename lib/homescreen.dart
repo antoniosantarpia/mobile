@@ -13,7 +13,6 @@ class HomePageContent extends StatefulWidget {
 }
 
 class _HomePageContentState extends State<HomePageContent> {
-  List<viaggio> _viaggi = [];
   List<destinazione> _destinazioni = [];
   viaggio? _prossimoViaggio;
 
@@ -39,7 +38,6 @@ class _HomePageContentState extends State<HomePageContent> {
     });
 
     setState(() {
-      _viaggi = viaggiList;
       _destinazioni = destinazioniList;
       _prossimoViaggio = prossimoViaggio;
     });
@@ -102,7 +100,7 @@ class _HomePageContentState extends State<HomePageContent> {
               : const SizedBox(height: 0), // Se non ci sono viaggi, non mostra nulla
           const SizedBox(height: 16),
           const Text(
-            'Ultime Destinazioni',
+            'Ultime Destinazioni:',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
