@@ -63,17 +63,16 @@ class DatabaseHelper {
 
     await db.execute('''
       CREATE TABLE categoria(
-        id_categoria INTEGER PRIMARY KEY, 
-        nome VARCHAR(20) NOT NULL
+        nome VARCHAR(20) PRIMARY KEY
       );
     ''');
 
     await db.execute('''
       CREATE TABLE viaggio_categoria(
-        categoria INTEGER, 
+        categoria VARCHAR(20), 
         viaggio INTEGER, 
         PRIMARY KEY(categoria, viaggio), 
-        FOREIGN KEY(categoria) REFERENCES categoria(id_categoria), 
+        FOREIGN KEY(categoria) REFERENCES categoria(nome), 
         FOREIGN KEY(viaggio) REFERENCES viaggio(id_viaggio)
       );
     ''');
@@ -145,6 +144,17 @@ class DatabaseHelper {
     });
   }
 
+  Future<List<categoria>> getCategory() async {
+    final db = await database;
+    final List<Map<String, Object?>> maps = await db.query('categoria');
+
+    return List.generate(maps.length, (i) {
+      return categoria(
+        nome: maps[i]['nome'] as String
+      );
+    });
+  }
+
   Future<List<Map<String, dynamic>>> getDestinationWithTripCount() async {
     final db = await database;
     return await db.rawQuery('''
@@ -188,6 +198,13 @@ class DatabaseHelper {
     return id ?? 0;  // Se il valore è null, restituisce 0
   }
 
+  Future<int> getLastImgId() async {
+    final db = await database;
+    var result = await db.rawQuery('SELECT MAX(id_foto) as max_id FROM foto');
+    int? id = result.first['max_id'] as int?;
+    return id ?? 0;  // Se il valore è null, restituisce 0
+  }
+
   Future<List<destinazione>> getUltimiViaggiDestinazioni(int limit) async {
     final db = await database;
     final List<Map<String, Object?>> maps = await db.rawQuery('''
@@ -208,6 +225,25 @@ class DatabaseHelper {
     });
   }
 
+  Future<void> updateViaggio(viaggio v) async {
+    final db = await database;
+    await db.update(
+      'viaggio',
+      v.toMap(),
+      where: 'id_viaggio = ?',
+      whereArgs: [v.id_viaggio],
+    );
+  }
+
+  Future<void> updateFoto(foto f) async {
+    final db = await database;
+    await db.update(
+      'foto',
+      f.toMap(),
+      where: 'id_foto = ?',
+      whereArgs: [f.id_foto],
+    );
+  }
 
   Future<void> deleteViaggio(int id) async {
     final db = await database;
@@ -232,5 +268,7 @@ class DatabaseHelper {
       return null;
     }
   }
+
+
 
 }

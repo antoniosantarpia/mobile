@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'database/database_helper.dart';
 import 'database/foto.dart';
 import 'database/viaggio.dart';
 import 'database/destinazione.dart';
+import 'database/categoria.dart';
+import 'database/viaggio_categoria.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -27,10 +30,15 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
   List<destinazione> _destinazioni = [];
   String? _imagePath;
 
+  List<String> _selectedCategorie = [];
+  List<categoria> _categorie = [];
+
+
   @override
   void initState() {
     super.initState();
     _loadDestinazioni();
+    _loadCategorie();
   }
 
   Future<void> _loadDestinazioni() async {
@@ -44,6 +52,13 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
     }
   }
 
+  Future<void> _loadCategorie() async {
+    final categorie = await DatabaseHelper.instance.getCategory();
+    setState(() {
+      _categorie = categorie;
+    });
+  }
+
   Future<String> _saveImage(File image) async {
     final directory = await getApplicationDocumentsDirectory();
     final path = directory.path;
@@ -55,15 +70,19 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    try {
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
-    if (pickedFile != null) {
-      final imagePath = await _saveImage(File(pickedFile.path));
-      setState(() {
-        _imagePath = imagePath;
-      });
-    } else {
-      print('Nessuna immagine selezionata.');
+      if (pickedFile != null) {
+        final imagePath = await _saveImage(File(pickedFile.path));
+        setState(() {
+          _imagePath = imagePath;
+        });
+      } else {
+        print('Nessuna immagine selezionata.');
+      }
+    } catch (e){
+      print('Errore durante il pickimage: $e');
     }
   }
 
@@ -92,13 +111,28 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
         note: note,
         itinerario: itinerario,
         destinazione: _selectedDestinazione!,
+
       );
 
       await DatabaseHelper.instance.insertViaggio(newViaggio);
 
+      for (String categoria in _selectedCategorie) {
+        final newViaggioCategoria = viaggio_categoria(
+          categoria: categoria,
+          viaggio: count,
+        );
+        await DatabaseHelper.instance.insertViaggioCategoria(
+            newViaggioCategoria);
+      }
+
+
+
+      final lastidFoto = await DatabaseHelper.instance.getLastImgId();
+      final countFoto = lastidFoto + 1;
+
       if (_imagePath != null) {
         final newFoto = foto(
-          id_foto: 0,
+          id_foto: countFoto,
           viaggio: count,
           path: _imagePath!,
         );
@@ -119,6 +153,46 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       print('Error adding trip: $e');
     }
   }
+
+  Future<void> _showCategorieDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Seleziona Categorie'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: _categorie.map((categoria) {
+                return CheckboxListTile(
+                  title: Text(categoria.nome),
+                  value: _selectedCategorie.contains(categoria.nome),
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true && !_selectedCategorie.contains(categoria.nome)) {
+                        _selectedCategorie.add(categoria.nome);
+                      } else if (value == false || _selectedCategorie.contains(categoria.nome)) {
+                        _selectedCategorie.remove(categoria.nome);
+                      }
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Refresh the state of the parent widget
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -163,6 +237,26 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                   return null;
                 },
               ),
+
+              ListTile(
+                title: const Text('Categorie Viaggio'),
+                trailing: const Icon(Icons.arrow_drop_down),
+                onTap: _showCategorieDialog,
+              ),
+              Wrap(
+                children: _selectedCategorie.map((categoria) {
+                  return Chip(
+                    label: Text(categoria),
+                    onDeleted: () {
+                      setState(() {
+                        _selectedCategorie.remove(categoria);
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+
+
               TextFormField(
                 controller: _dataInizioController,
                 decoration: const InputDecoration(labelText: 'Data Inizio'),

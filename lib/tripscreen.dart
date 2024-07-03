@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'database/database_helper.dart';
 import 'database/viaggio.dart';
 import 'aggiungiviaggio.dart';
+import 'dettagliviaggio.dart'; // Importa la schermata DettaglioViaggio
 import 'package:intl/intl.dart';
 
 class TripsScreen extends StatefulWidget {
@@ -122,6 +123,14 @@ class _TripsScreenState extends State<TripsScreen> {
             _refreshViaggi();
           },
         ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DettaglioViaggio(v: v),
+            ),
+          );
+        },
       ),
     );
   }

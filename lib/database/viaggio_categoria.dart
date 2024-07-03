@@ -1,22 +1,22 @@
 
 class viaggio_categoria {
-  final int id_categoria;
-  final int id_viaggio;
+  final String categoria;
+  final int viaggio;
 
   const viaggio_categoria(
-      {required this.id_categoria,
-        required this.id_viaggio});
+      {required this.categoria,
+        required this.viaggio});
 
   Map<String, Object?> toMap() {
     return {
-      'id_categoria': id_categoria,
-      'id_viaggio': id_viaggio
+      'categoria': categoria,
+      'viaggio': viaggio
     };
   }
 
 
   @override
   String toString() {
-    return 'viaggio_categoria{id_categoria: $id_categoria, id_viaggio: $id_viaggio}';
+    return 'viaggio_categoria{categoria: $categoria, viaggio: $viaggio}';
   }
 }

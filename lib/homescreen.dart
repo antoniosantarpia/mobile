@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:prova/aggiungiviaggio.dart';
 import 'database/database_helper.dart';
 import 'database/viaggio.dart';
+import 'database/categoria.dart';
 import 'database/destinazione.dart';
 import 'database/foto.dart';
 import 'dart:io';
@@ -18,6 +19,8 @@ class _HomePageContentState extends State<HomePageContent> {
   List<destinazione> _destinazioni = [];
   viaggio? _prossimoViaggio;
   foto? _prossimaFoto;
+
+  final TextEditingController _categoriaController = TextEditingController();
 
   @override
   void initState() {
@@ -35,7 +38,7 @@ class _HomePageContentState extends State<HomePageContent> {
     DateTime now = DateTime.now();
     for (var viaggio in viaggiList) {
       if (prossimoViaggio == null ||
-          viaggio.data_inizio.difference(now).abs().compareTo(prossimoViaggio!.data_inizio.difference(now).abs()) < 0) {
+          viaggio.data_inizio.difference(now).abs().compareTo(prossimoViaggio.data_inizio.difference(now).abs()) < 0) {
         prossimoViaggio = viaggio;
       }
     }
@@ -50,6 +53,22 @@ class _HomePageContentState extends State<HomePageContent> {
       _prossimoViaggio = prossimoViaggio;
       _prossimaFoto = prossimaFoto;
     });
+  }
+
+
+  Future<void> _addCategoria() async {
+    try {
+      final nome = _categoriaController.text;
+
+      final newCategoria = categoria(nome: nome);
+
+      await DatabaseHelper.instance.insertCategoria(newCategoria);
+      print('Added category: $nome');
+      _categoriaController.clear();
+
+    } catch (e) {
+      print('Error adding category: $e');
+    }
   }
 
   @override
@@ -163,7 +182,37 @@ class _HomePageContentState extends State<HomePageContent> {
                 child: const Text('Aggiungi Viaggio'),
               ),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () async {
+                  final result = await showDialog<String>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: const Text('Aggiungi categoria'),
+                        content: TextField(
+                          controller: _categoriaController,
+                          decoration: const InputDecoration(hintText: 'Nome categoria'),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Annulla'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(_categoriaController.text);
+                            },
+                            child: const Text('Aggiungi'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                  if (result != null && result.isNotEmpty) {
+                    await _addCategoria();
+                  }
+                },
                 child: const Text('Crea Categoria'),
               ),
             ],
