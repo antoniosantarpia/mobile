@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'database/database_helper.dart';
+import 'database/foto.dart';
 import 'database/viaggio.dart';
 import 'database/destinazione.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class AggiungiViaggio extends StatefulWidget {
   const AggiungiViaggio({super.key});
@@ -21,6 +25,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
 
   String? _selectedDestinazione;
   List<destinazione> _destinazioni = [];
+  String? _imagePath;
 
   @override
   void initState() {
@@ -39,6 +44,29 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       });
     } catch (e) {
       print('Error loading destinations: $e');
+    }
+  }
+
+  Future<String> _saveImage(File image) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = directory.path;
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.png';
+    final imagePath = '$path/$fileName';
+    final savedImage = await image.copy(imagePath);
+    return savedImage.path;
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final imagePath = await _saveImage(File(pickedFile.path));
+      setState(() {
+        _imagePath = imagePath;
+      });
+    } else {
+      print('Nessuna immagine selezionata.');
     }
   }
 
@@ -70,12 +98,26 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       );
 
       await DatabaseHelper.instance.insertViaggio(newViaggio);
+
+      if (_imagePath != null) {
+        final newFoto = foto(
+          id_foto: 0,
+          viaggio: count,
+          path: _imagePath!,
+        );
+
+        await DatabaseHelper.instance.insertFoto(newFoto);
+      }
+
       print('Added Trip: $titolo');
       _titoloController.clear();
       _dataInizioController.clear();
       _dataFineController.clear();
       _noteController.clear();
       _itinerarioController.clear();
+      setState(() {
+        _imagePath = null;
+      });
     } catch (e) {
       print('Error adding trip: $e');
     }
@@ -184,9 +226,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                 },
               ),
               ElevatedButton(
-                onPressed: () {
-                  // Implementa la funzionalità per selezionare una foto
-                },
+                onPressed: _pickImage,
                 child: const Text('Carica Foto'),
               ),
               const SizedBox(height: 20),

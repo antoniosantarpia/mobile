@@ -1,22 +1,27 @@
-
 class foto {
   final int id_foto;
   final int viaggio;
+  final String path;
 
-  const foto(
-      {required this.id_foto,
-       required this.viaggio});
+  foto({
+    required this.id_foto,
+    required this.viaggio,
+    required this.path,
+  });
 
-  Map<String, Object?> toMap() {
-    return {
-      'id_foto': id_foto,
-      'viaggio': viaggio
-    };
+  factory foto.fromMap(Map<String, dynamic> map) {
+    return foto(
+      id_foto: map['id_foto'],
+      viaggio: map['viaggio'],
+      path: map['path'],
+    );
   }
 
-
-  @override
-  String toString() {
-    return 'foto{id_foot: $id_foto, viaggio: $viaggio}';
+  Map<String, dynamic> toMap() {
+    return {
+      'id_foto': id_foto,
+      'viaggio': viaggio,
+      'path': path,
+    };
   }
 }

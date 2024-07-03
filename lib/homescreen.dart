@@ -4,6 +4,8 @@ import 'package:prova/aggiungiviaggio.dart';
 import 'database/database_helper.dart';
 import 'database/viaggio.dart';
 import 'database/destinazione.dart';
+import 'database/foto.dart';
+import 'dart:io';
 
 class HomePageContent extends StatefulWidget {
   const HomePageContent({super.key});
@@ -15,6 +17,7 @@ class HomePageContent extends StatefulWidget {
 class _HomePageContentState extends State<HomePageContent> {
   List<destinazione> _destinazioni = [];
   viaggio? _prossimoViaggio;
+  foto? _prossimaFoto;
 
   @override
   void initState() {
@@ -30,16 +33,22 @@ class _HomePageContentState extends State<HomePageContent> {
     // Trova il viaggio più vicino alla data attuale come "Prossimo Viaggio"
     viaggio? prossimoViaggio;
     DateTime now = DateTime.now();
-    viaggiList.forEach((viaggio) {
+    for (var viaggio in viaggiList) {
       if (prossimoViaggio == null ||
           viaggio.data_inizio.difference(now).abs().compareTo(prossimoViaggio!.data_inizio.difference(now).abs()) < 0) {
         prossimoViaggio = viaggio;
       }
-    });
+    }
+
+    foto? prossimaFoto;
+    if (prossimoViaggio != null) {
+      prossimaFoto = await db.getFotoByViaggioId(prossimoViaggio.id_viaggio);
+    }
 
     setState(() {
       _destinazioni = destinazioniList;
       _prossimoViaggio = prossimoViaggio;
+      _prossimaFoto = prossimaFoto;
     });
   }
 
@@ -72,11 +81,19 @@ class _HomePageContentState extends State<HomePageContent> {
                       topLeft: Radius.circular(10),
                       topRight: Radius.circular(10),
                     ),
-                    child: Image.asset(
-                      'assets/images/viaggio1.png', // Sostituire con il percorso corretto dell'immagine
+                    child: _prossimaFoto != null
+                        ? Image.file(
+                      File(_prossimaFoto!.path),
                       height: 150,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                    )
+                        : const SizedBox(
+                      height: 150,
+                      width: double.infinity,
+                      child: Center(
+                        child: Text('No Image Available'),
+                      ),
                     ),
                   ),
                   Padding(

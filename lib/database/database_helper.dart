@@ -39,7 +39,8 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE foto(
         id_foto INTEGER PRIMARY KEY, 
-        viaggio INTEGER NOT NULL, 
+        viaggio INTEGER NOT NULL,
+        path TEXT NOT NULL, 
         FOREIGN KEY(viaggio) REFERENCES viaggio(id_viaggio)
       );
     ''');
@@ -216,4 +217,20 @@ class DatabaseHelper {
       whereArgs: [id],
     );
   }
+
+  Future<foto?> getFotoByViaggioId(int viaggio) async {
+    final db = await instance.database;
+    final maps = await db.query(
+      'foto',
+      where: 'viaggio = ?',
+      whereArgs: [viaggio],
+    );
+
+    if (maps.isNotEmpty) {
+      return foto.fromMap(maps.first);
+    } else {
+      return null;
+    }
+  }
+
 }
