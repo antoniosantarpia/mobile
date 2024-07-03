@@ -38,9 +38,6 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       final destinazioni = await DatabaseHelper.instance.getDestinations();
       setState(() {
         _destinazioni = destinazioni;
-        if (_destinazioni.isNotEmpty) {
-          _selectedDestinazione = _destinazioni.first.nome;
-        }
       });
     } catch (e) {
       print('Error loading destinations: $e');
@@ -146,7 +143,6 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                 },
               ),
               DropdownButtonFormField<String>(
-                hint: const Text('Seleziona una destinazione'),
                 decoration: const InputDecoration(labelText: 'Destinazione Viaggio'),
                 value: _selectedDestinazione,
                 items: _destinazioni.map((destinazione) {

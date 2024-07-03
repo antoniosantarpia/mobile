@@ -114,12 +114,15 @@ class _HomePageContentState extends State<HomePageContent> {
               ),
             ),
           )
-              : const SizedBox(height: 0), // Se non ci sono viaggi, non mostra nulla
+              : const Center(child: Text('Nessun viaggio trovato')),
           const SizedBox(height: 16),
           const Text(
             'Ultime Destinazioni:',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
+          if (_destinazioni.isEmpty)
+            const Center(child: Text('Nessuna destinazione trovata')) // Mostra il messaggio solo se non ci sono destinazioni
+          else
           const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
