@@ -33,7 +33,7 @@ class _HomePageContentState extends State<HomePageContent> {
     final viaggiList = await db.getViaggi();
     final destinazioniList = await db.getUltimiViaggiDestinazioni(2);
 
-    // Trova il viaggio più vicino alla data attuale come "Prossimo Viaggio"
+    // Trova il viaggio più vicino alla data attuale come "Prossimo Viaggio".
     viaggio? prossimoViaggio;
     DateTime now = DateTime.now();
     for (var viaggio in viaggiList) {
