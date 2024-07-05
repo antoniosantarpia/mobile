@@ -18,6 +18,9 @@ class DatabaseHelper {
     return openDatabase(
       join(await getDatabasesPath(), 'miodatabase.db'),
       onCreate: _createTables,
+      onOpen: (db) async{
+        await db.execute ('PRAGMA foreign_keys = ON;');
+      },
       version: 1,
     );
   }
@@ -174,12 +177,15 @@ class DatabaseHelper {
 
   Future<void> deleteDestinazione(String nome) async {
     final db = await database;
-    await db.delete(
-      'destinazione',
-      where: 'nome = ?',
-      whereArgs: [nome],
-    );
+
+      await db.delete(
+        'destinazione',
+        where: 'nome = ?',
+        whereArgs: [nome],
+      );
+
   }
+
 
   Future<List<viaggio>> getViaggi() async {
     final db = await database;
@@ -190,6 +196,32 @@ class DatabaseHelper {
     });
   }
 
+  Future<List<viaggio_categoria>> getViaggioCategoria() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('viaggio');
+
+    return List.generate(maps.length, (i) {
+      return viaggio_categoria.fromMap(maps[i]);
+    });
+  }
+
+  /*
+// cerco i viaggi nel db che contengono nel titolo una parola chiave
+  Future<List<viaggio>> searchViaggi(String value) async {
+    final db = await database;
+    final List<Map<String, Object?>> maps = await db.rawQuery(
+      '''
+    SELECT *
+    FROM viaggio
+    WHERE titolo LIKE ?
+    ''',
+      ['%$value%'],
+    );
+    return List.generate(maps.length, (i) {
+      return viaggio.fromMap(maps[i]);
+    });
+  }
+*/
 
   Future<int> getLastViaggioId() async {
     final db = await database;
@@ -261,13 +293,33 @@ class DatabaseHelper {
       where: 'viaggio = ?',
       whereArgs: [viaggio],
     );
-
     if (maps.isNotEmpty) {
       return foto.fromMap(maps.first);
     } else {
       return null;
     }
   }
+
+  Future<int> getTotalTrips() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM viaggio');
+    int? id = result.first['count'] as int?;
+    return id ?? 0;
+  }
+
+  Future<List<Map<String, dynamic>>> getMostVisitedDestinations() async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT destinazione, COUNT(destinazione) AS count
+      FROM viaggio
+      GROUP BY destinazione
+      ORDER BY count DESC
+      LIMIT 3
+    ''');
+    return result;
+  }
+
+  
 
 
 

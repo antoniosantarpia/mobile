@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'database/database_helper.dart';
 import 'database/foto.dart';
 import 'database/viaggio.dart';
@@ -29,6 +28,9 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
   String? _selectedDestinazione;
   List<destinazione> _destinazioni = [];
   String? _imagePath;
+
+  DateTime? _dataInizio;
+  DateTime? _dataFine;
 
   List<String> _selectedCategorie = [];
   List<categoria> _categorie = [];
@@ -155,38 +157,46 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
   }
 
   Future<void> _showCategorieDialog() async {
+    final selectedCategorieTemp = List<String>.from(_selectedCategorie);
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Seleziona Categorie'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: _categorie.map((categoria) {
-                return CheckboxListTile(
-                  title: Text(categoria.nome),
-                  value: _selectedCategorie.contains(categoria.nome),
-                  onChanged: (bool? value) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Seleziona Categorie'),
+              content: SingleChildScrollView(
+                child: ListBody(
+                  children: _categorie.map((categoria) {
+                    return CheckboxListTile(
+                      title: Text(categoria.nome),
+                      value: selectedCategorieTemp.contains(categoria.nome),
+                      onChanged: (bool? value) {
+                        setDialogState(() {
+                          if (value == true && !selectedCategorieTemp.contains(categoria.nome)) {
+                            selectedCategorieTemp.add(categoria.nome);
+                          } else if (value == false && selectedCategorieTemp.contains(categoria.nome)) {
+                            selectedCategorieTemp.remove(categoria.nome);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('OK'),
+                  onPressed: () {
                     setState(() {
-                      if (value == true && !_selectedCategorie.contains(categoria.nome)) {
-                        _selectedCategorie.add(categoria.nome);
-                      } else if (value == false || _selectedCategorie.contains(categoria.nome)) {
-                        _selectedCategorie.remove(categoria.nome);
-                      }
+                      _selectedCategorie = selectedCategorieTemp;
                     });
+                    Navigator.of(context).pop();
                   },
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Refresh the state of the parent widget
-              },
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -237,7 +247,6 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                   return null;
                 },
               ),
-
               ListTile(
                 title: const Text('Categorie Viaggio'),
                 trailing: const Icon(Icons.arrow_drop_down),
@@ -255,8 +264,6 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                   );
                 }).toList(),
               ),
-
-
               TextFormField(
                 controller: _dataInizioController,
                 decoration: const InputDecoration(labelText: 'Data Inizio'),
@@ -266,12 +273,13 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                     context: context,
                     initialDate: DateTime.now(),
                     firstDate: DateTime(2000),
-                    lastDate: DateTime(2101),
+                    lastDate: DateTime(2100),
                   );
                   if (pickedDate != null) {
                     final formatter = DateFormat('dd/MM/yyyy');
                     setState(() {
                       _dataInizioController.text = formatter.format(pickedDate);
+                      _dataInizio = pickedDate;
                     });
                   }
                 },
@@ -288,11 +296,29 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                     lastDate: DateTime(2101),
                   );
                   if (pickedDate != null) {
-                    final formatter = DateFormat('dd/MM/yyyy');
-                    setState(() {
-                      _dataFineController.text = formatter.format(pickedDate);
-                    });
+                    if (_dataInizio != null && pickedDate.isBefore(_dataInizio!)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('La data di fine deve essere successiva alla data di inizio'),
+                        ),
+                      );
+                    } else {
+                      final formatter = DateFormat('dd/MM/yyyy');
+                      setState(() {
+                        _dataFineController.text = formatter.format(pickedDate);
+                        _dataFine = pickedDate;
+                      });
+                    }
                   }
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Per favore inserisci la data di fine';
+                  }
+                  if (_dataInizio != null && _dataFine != null && _dataFine!.isBefore(_dataInizio!)) {
+                    return 'La data di fine deve essere successiva alla data di inizio';
+                  }
+                  return null;
                 },
               ),
               TextFormField(

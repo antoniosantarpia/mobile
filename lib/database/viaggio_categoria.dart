@@ -14,6 +14,12 @@ class viaggio_categoria {
     };
   }
 
+  static viaggio_categoria fromMap(Map<String, dynamic> map) {
+    return viaggio_categoria(
+      categoria: map['categoria'] as String,
+      viaggio: map['viaggio'] as int,
+    );
+  }
 
   @override
   String toString() {

@@ -54,14 +54,42 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
     }
   }
 
+
   Future<void> _deleteDestination(String nome) async {
     try {
       await DatabaseHelper.instance.deleteDestinazione(nome);
       print('Deleted destination with name: $nome');
       await _loadDestinations();
     } catch (e) {
-      print('Error deleting destination: $e');
+      _showErrorDialog('Non è possibile eliminare la destinazione.');
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Errore'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(message),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

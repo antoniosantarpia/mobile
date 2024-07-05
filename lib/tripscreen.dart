@@ -123,15 +123,13 @@ class _TripsScreenState extends State<TripsScreen> {
             _refreshViaggi();
           },
         ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DettaglioViaggio(v: v),
-            ),
-          );
-        },
-      ),
-    );
+      onTap: () async {
+        await Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => DettaglioViaggio(v: v,
+        onSave: _refreshViaggi, // Passa il callback
+        ),
+    ));
+    },
+    ));
   }
 }
