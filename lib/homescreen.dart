@@ -6,6 +6,7 @@ import 'database/viaggio.dart';
 import 'database/categoria.dart';
 import 'database/destinazione.dart';
 import 'database/foto.dart';
+import 'dettagliviaggio.dart';
 import 'dart:io';
 
 class HomePageContent extends StatefulWidget {
@@ -33,10 +34,11 @@ class _HomePageContentState extends State<HomePageContent> {
     final viaggiList = await db.getViaggi();
     final destinazioniList = await db.getUltimiViaggiDestinazioni(2);
 
+
     // Trova il viaggio più vicino alla data attuale come "Prossimo Viaggio".
     viaggio? prossimoViaggio;
     DateTime now = DateTime.now();
-    for (var viaggio in viaggiList) {
+    for (var viaggio in viaggiList) {// prendo il prossimo viaggio pianificato
       if (prossimoViaggio == null ||
           viaggio.data_inizio.difference(now).abs().compareTo(prossimoViaggio.data_inizio.difference(now).abs()) < 0) {
         prossimoViaggio = viaggio;
@@ -70,7 +72,6 @@ class _HomePageContentState extends State<HomePageContent> {
       print('Error adding category: $e');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -83,57 +84,64 @@ class _HomePageContentState extends State<HomePageContent> {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          _prossimoViaggio != null
-              ? Container(
-            width: 340, // Larghezza della card
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            child: Card(
-              color: const Color(0xffdcdcf7),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      topRight: Radius.circular(10),
-                    ),
-                    child: _prossimaFoto != null
-                        ? Image.file(
-                      File(_prossimaFoto!.path),
-                      height: 150,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    )
-                        : const SizedBox(
-                      height: 150,
-                      width: double.infinity,
-                      child: Center(
-                        child: Text('No Image Available'),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DettaglioViaggio(v: _prossimoViaggio!, onSave: _loadData)),
+              );
+            },
+            child: _prossimoViaggio != null ? Container(
+              width: 340, // Larghezza della card
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              child: Card(
+                color: const Color(0xffdcdcf7),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        topRight: Radius.circular(10),
+                      ),
+                      child: _prossimaFoto != null
+                          ? Image.file(
+                        File(_prossimaFoto!.path),
+                        height: 150,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      )
+                          : const SizedBox(
+                        height: 150,
+                        width: double.infinity,
+                        child: Center(
+                          child: Text('No Image Available'),
+                        ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      _prossimoViaggio!.titolo,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        _prossimoViaggio!.titolo,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                    child: Text(
-                      'Dal ${DateFormat('dd/MM/yyyy').format(_prossimoViaggio!.data_inizio)} al ${DateFormat('dd/MM/yyyy').format(_prossimoViaggio!.data_fine)}',
-                      style: const TextStyle(fontSize: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                      child: Text(
+                        'Dal ${DateFormat('dd/MM/yyyy').format(_prossimoViaggio!.data_inizio)} al ${DateFormat('dd/MM/yyyy').format(_prossimoViaggio!.data_fine)}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          )
-              : const Center(child: Text('Nessun viaggio trovato')),
+            )
+                : const Center(child: Text('Nessun viaggio trovato')),
+          ),
           const SizedBox(height: 16),
           const Text(
             'Ultime Destinazioni:',
@@ -142,7 +150,7 @@ class _HomePageContentState extends State<HomePageContent> {
           if (_destinazioni.isEmpty)
             const Center(child: Text('Nessuna destinazione trovata')) // Mostra il messaggio solo se non ci sono destinazioni
           else
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
           Expanded(
             child: ListView.builder(
               itemCount: _destinazioni.length > 2 ? 2 : _destinazioni.length, // Mostra al massimo due destinazioni
@@ -221,4 +229,5 @@ class _HomePageContentState extends State<HomePageContent> {
       ),
     );
   }
+
 }

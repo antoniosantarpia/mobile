@@ -116,13 +116,6 @@ class _TripsScreenState extends State<TripsScreen> {
         title: Text(v.titolo),
         subtitle: Text(
             'Dal ${DateFormat('dd/MM/yyyy').format(v.data_inizio)} al ${DateFormat('dd/MM/yyyy').format(v.data_fine)}\n${v.destinazione}'),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete),
-          onPressed: () async {
-            await DatabaseHelper.instance.deleteViaggio(v.id_viaggio);
-            _refreshViaggi();
-          },
-        ),
       onTap: () async {
         await Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => DettaglioViaggio(v: v,

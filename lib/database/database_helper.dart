@@ -6,6 +6,7 @@ import 'recensione.dart';
 import 'destinazione.dart';
 import 'foto.dart';
 import 'viaggio_categoria.dart';
+import 'package:intl/intl.dart';
 
 class DatabaseHelper {
   DatabaseHelper._privateConstructor();
@@ -35,7 +36,7 @@ class DatabaseHelper {
         data_inizio DATE NOT NULL, 
         data_fine DATE NOT NULL, 
         destinazione VARCHAR(20) NOT NULL,
-        FOREIGN KEY(destinazione) REFERENCES destinazione(nome)
+        FOREIGN KEY(destinazione) REFERENCES destinazione(nome) ON DELETE NO ACTION
       );
     ''');
 
@@ -44,7 +45,7 @@ class DatabaseHelper {
         id_foto INTEGER PRIMARY KEY, 
         viaggio INTEGER NOT NULL,
         path TEXT NOT NULL, 
-        FOREIGN KEY(viaggio) REFERENCES viaggio(id_viaggio)
+        FOREIGN KEY(viaggio) REFERENCES viaggio(id_viaggio) ON DELETE CASCADE
       );
     ''');
 
@@ -60,7 +61,7 @@ class DatabaseHelper {
         id_recensione INTEGER PRIMARY KEY, 
         testo TEXT NOT NULL, 
         viaggio INTEGER NOT NULL, 
-        FOREIGN KEY(viaggio) REFERENCES viaggio(id_viaggio)
+        FOREIGN KEY(viaggio) REFERENCES viaggio(id_viaggio) ON DELETE CASCADE
       );
     ''');
 
@@ -75,8 +76,8 @@ class DatabaseHelper {
         categoria VARCHAR(20), 
         viaggio INTEGER, 
         PRIMARY KEY(categoria, viaggio), 
-        FOREIGN KEY(categoria) REFERENCES categoria(nome), 
-        FOREIGN KEY(viaggio) REFERENCES viaggio(id_viaggio)
+        FOREIGN KEY(categoria) REFERENCES categoria(nome) ON DELETE CASCADE, 
+        FOREIGN KEY(viaggio) REFERENCES viaggio(id_viaggio) ON DELETE CASCADE
       );
     ''');
   }
@@ -135,6 +136,7 @@ class DatabaseHelper {
     );
   }
 
+
   Future<List<destinazione>> getDestinations() async {
     final db = await database;
     final List<Map<String, Object?>> maps = await db.query('destinazione');
@@ -186,6 +188,17 @@ class DatabaseHelper {
 
   }
 
+  Future<void> deleteViaggioCategorieByViaggioId(int id) async {
+    final db = await database;
+
+    await db.delete(
+      'viaggio_categoria',
+      where: 'viaggio = ?',
+      whereArgs: [id],
+    );
+
+  }
+
 
   Future<List<viaggio>> getViaggi() async {
     final db = await database;
@@ -194,6 +207,26 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) {
       return viaggio.fromMap(maps[i]);
     });
+  }
+
+  Future<List<categoria>> getCategoryOfTrip(int id) async{
+    try {
+      final db = await database;
+      final List<Map<String, Object?>> maps = await db.rawQuery('''
+      SELECT categoria
+      FROM viaggio_categoria vc
+      WHERE vc.viaggio = $id
+    ''');
+
+      return List.generate(maps.length, (i) {
+        return categoria(
+          nome: maps[i]['categoria'] as String,
+        );
+      });
+    }catch(e){
+      print('Errore getCategoryOfTrip (con id=$id): $e');
+      return [];
+    }
   }
 
   Future<List<viaggio_categoria>> getViaggioCategoria() async {
@@ -205,23 +238,6 @@ class DatabaseHelper {
     });
   }
 
-  /*
-// cerco i viaggi nel db che contengono nel titolo una parola chiave
-  Future<List<viaggio>> searchViaggi(String value) async {
-    final db = await database;
-    final List<Map<String, Object?>> maps = await db.rawQuery(
-      '''
-    SELECT *
-    FROM viaggio
-    WHERE titolo LIKE ?
-    ''',
-      ['%$value%'],
-    );
-    return List.generate(maps.length, (i) {
-      return viaggio.fromMap(maps[i]);
-    });
-  }
-*/
 
   Future<int> getLastViaggioId() async {
     final db = await database;
@@ -239,11 +255,12 @@ class DatabaseHelper {
 
   Future<List<destinazione>> getUltimiViaggiDestinazioni(int limit) async {
     final db = await database;
+    DateTime now = DateTime.now();
     final List<Map<String, Object?>> maps = await db.rawQuery('''
     SELECT d.nome, COUNT(v.id_viaggio) as trip_count
     FROM destinazione d
     JOIN viaggio v ON d.nome = v.destinazione
-    WHERE v.data_fine <= date('now')
+    WHERE v.data_fine < date('$now')
     GROUP BY d.nome
     ORDER BY MAX(v.data_fine) DESC
     LIMIT $limit
@@ -267,15 +284,31 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> updateFoto(foto f) async {
+  Future<void> saveOrUpdateFoto(foto f) async {
     final db = await database;
-    await db.update(
+
+    // Step 1: Check if the foto exists
+    final List<Map<String, dynamic>> maps = await db.query(
       'foto',
-      f.toMap(),
       where: 'id_foto = ?',
       whereArgs: [f.id_foto],
     );
+
+    // Step 2: Update if exists, insert otherwise
+    if (maps.isNotEmpty) {
+      // Foto exists, update it
+      await db.update(
+        'foto',
+        f.toMap(),
+        where: 'id_foto = ?',
+        whereArgs: [f.id_foto],
+      );
+    } else {
+      // Foto does not exist, insert it
+    insertFoto(f);
+    }
   }
+
 
   Future<void> deleteViaggio(int id) async {
     final db = await database;
@@ -285,6 +318,16 @@ class DatabaseHelper {
       whereArgs: [id],
     );
   }
+
+Future<int> getIdFoto(String path) async{
+  final db = await instance.database;
+  final maps = await db.query(
+    'foto',
+    where: 'path = ?',
+    whereArgs: [path],
+  );
+  return foto.fromMap(maps.first).id_foto;
+}
 
   Future<foto?> getFotoByViaggioId(int viaggio) async {
     final db = await instance.database;
@@ -300,9 +343,12 @@ class DatabaseHelper {
     }
   }
 
-  Future<int> getTotalTrips() async {
+  Future<int> getTotalTripsDone() async {
     final db = await database;
-    final result = await db.rawQuery('SELECT COUNT(*) as count FROM viaggio');
+    final result = await db.rawQuery('''
+    SELECT COUNT(*) as count 
+    FROM viaggio v
+    WHERE v.data_fine < date('now')''');
     int? id = result.first['count'] as int?;
     return id ?? 0;
   }
@@ -311,7 +357,8 @@ class DatabaseHelper {
     final db = await database;
     final result = await db.rawQuery('''
       SELECT destinazione, COUNT(destinazione) AS count
-      FROM viaggio
+      FROM viaggio v
+      WHERE v.data_fine < date('now')
       GROUP BY destinazione
       ORDER BY count DESC
       LIMIT 3

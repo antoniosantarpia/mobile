@@ -5,7 +5,7 @@ class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
 
   Future<Map<String, dynamic>> _loadStatistics() async {
-    final int totalTrips = await DatabaseHelper.instance.getTotalTrips();
+    final int totalTrips = await DatabaseHelper.instance.getTotalTripsDone();
     final List<Map<String, dynamic>> mostVisitedDestinations = await DatabaseHelper.instance.getMostVisitedDestinations();
     return {
       'totalTrips': totalTrips,

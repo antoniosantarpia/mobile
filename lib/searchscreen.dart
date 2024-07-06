@@ -296,7 +296,7 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
           ));
 
           // Aggiorna i viaggi e filtra nuovamente dopo il ritorno dalla pagina di dettaglio
-          if (result != null && result == true) {
+          if (result == true) {
            _loadViaggi();
             filterTrips();
           }

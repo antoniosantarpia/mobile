@@ -123,8 +123,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
           categoria: categoria,
           viaggio: count,
         );
-        await DatabaseHelper.instance.insertViaggioCategoria(
-            newViaggioCategoria);
+        await DatabaseHelper.instance.insertViaggioCategoria(newViaggioCategoria);
       }
 
 
