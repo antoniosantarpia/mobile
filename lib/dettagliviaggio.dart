@@ -8,6 +8,7 @@ import 'database/destinazione.dart';
 import 'database/categoria.dart';
 import 'database/viaggio_categoria.dart';
 import 'database/foto.dart';
+import 'database/recensione.dart';
 
 class DettaglioViaggio extends StatefulWidget {
   final viaggio v;
@@ -26,6 +27,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
   late TextEditingController _dataFineController;
   late TextEditingController _itinerarioController;
   late TextEditingController _noteController;
+  late TextEditingController _recensioneController;
 
   DateTime? _dataInizio;
   DateTime? _dataFine;
@@ -33,8 +35,10 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
   List<destinazione> _destinazioni = [];
   List<categoria> _selectedCategorie = [];
   List<categoria> _categorie = [];
+  String? _recensione;
   String? _currentImagePath; // Aggiungi questo campo per l'immagine attuale
   String? _previousImagePath; // Campo per il percorso dell'immagine precedente
+  bool canAddReview = false;
 
   @override
   void initState() {
@@ -44,12 +48,14 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
     _dataFineController = TextEditingController(text: DateFormat('dd/MM/yyyy').format(widget.v.data_fine));
     _itinerarioController = TextEditingController(text: widget.v.itinerario);
     _noteController = TextEditingController(text: widget.v.note);
+    _recensioneController = TextEditingController();
     _dataInizio = widget.v.data_inizio;
     _dataFine = widget.v.data_fine;
 
     _loadDestinazioni();
     _loadCategorie();
-    _loadImage(); // Carica l'immagine attuale
+    _loadImage();// Carica l'immagine attuale
+    _loadRecensione();
   }
 
   @override
@@ -58,6 +64,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
     _dataInizioController.dispose();
     _dataFineController.dispose();
     _itinerarioController.dispose();
+    _recensioneController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -71,6 +78,18 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
       });
     } catch (e) {
       print('Error loading destinations: $e');
+    }
+  }
+
+  Future<void> _loadRecensione() async {
+    try {
+      final rec = await DatabaseHelper.instance.getRecensione(widget.v.id_viaggio);
+      setState(() {
+        _recensione = rec;
+        _recensioneController = TextEditingController(text: rec);
+      });
+    } catch (e) {
+      print('Error loading review: $e');
     }
   }
 
@@ -132,7 +151,6 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
       );
 
       await DatabaseHelper.instance.deleteViaggioCategorieByViaggioId(widget.v.id_viaggio);
-      // Inserisci le nuove associazioni viaggio-categoria
       for (var categoria in _selectedCategorie) {
         final viaggioCategoria = viaggio_categoria(
           viaggio: widget.v.id_viaggio,
@@ -142,23 +160,45 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
       }
       await DatabaseHelper.instance.updateViaggio(updatedViaggio);
 
+      final idfoto;
 
+      if (_previousImagePath == null) {
+        idfoto = await DatabaseHelper.instance.getLastImgId() + 1;
+      } else {
+        idfoto = await DatabaseHelper.instance.getIdFoto(_previousImagePath!);
+      }
 
-        final idfoto;
-
-        if(_previousImagePath==null){
-              idfoto = await DatabaseHelper.instance.getLastImgId()+1;
-        }else{
-              idfoto = await DatabaseHelper.instance.getIdFoto(_previousImagePath!);
-        }
-
-        final newFoto = foto(
+      if(_currentImagePath!=null){
+        final Foto = foto(
           id_foto: idfoto,
           viaggio: widget.v.id_viaggio,
           path: _currentImagePath!,
         );
-        await DatabaseHelper.instance.saveOrUpdateFoto(newFoto);
+        await DatabaseHelper.instance.saveOrUpdateFoto(Foto);
+      }
 
+      final Recensione;
+      final id_rec = await DatabaseHelper.instance.getRecIdByViaggio(widget.v.id_viaggio);
+      if(_recensioneController.text.isNotEmpty) {
+        if (id_rec == 0) {
+          Recensione = recensione(
+            id_recensione: await DatabaseHelper.instance.getLastRecId() + 1,
+            testo: _recensioneController.text,
+            viaggio: widget.v.id_viaggio,
+          );
+        } else {
+          Recensione = recensione(
+            id_recensione: id_rec,
+            testo: _recensioneController.text,
+            viaggio: widget.v.id_viaggio,
+          );
+        }
+        await DatabaseHelper.instance.saveOrUpdateRecensione(Recensione);
+      }
+
+      // se un viaggio diventa pianificato eliminiamo la recensione presente
+      if(canAddReview==false)
+        await DatabaseHelper.instance.deleteReview(widget.v.id_viaggio);
 
       widget.onSave(); // Chiama il callback per aggiornare TripScreen
       Navigator.of(context).pop();
@@ -220,10 +260,10 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
         _currentImagePath = pickedFile.path;
       });
     }
-  }
-
-  @override
+  }@override
   Widget build(BuildContext context) {
+    canAddReview = _dataFine != null && _dataFine!.isBefore(DateTime.now());
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.v.titolo),
@@ -290,9 +330,6 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                       if (value == null || value.isEmpty) {
                         return 'Inserisci una data di fine';
                       }
-                      if (_dataInizio != null && _dataFine != null && _dataFine!.isBefore(_dataInizio!)) {
-                        return 'La data di fine deve essere successiva alla data di inizio';
-                      }
                       return null;
                     },
                   ),
@@ -344,8 +381,30 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                   );
                 }).toList(),
               ),
+              if (canAddReview)
+                TextFormField(
+                  controller: _recensioneController,
+                  decoration: const InputDecoration(labelText: 'Recensione'),
+                  maxLines: 4,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Inserisci una recensione';
+                    }
+                    return null;
+                  },
+                ),
               ElevatedButton(
-                onPressed: _saveChanges,
+                onPressed: () {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    if (_dataInizio != null && _dataFine != null && _dataFine!.isBefore(_dataInizio!)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('La data di fine deve essere successiva alla data di inizio')),
+                      );
+                    } else {
+                      _saveChanges();
+                    }
+                  }
+                },
                 child: const Text('Salva Modifiche'),
               ),
             ],
@@ -354,4 +413,5 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
       ),
     );
   }
+
 }

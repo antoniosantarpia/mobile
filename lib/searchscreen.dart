@@ -4,7 +4,6 @@ import 'database/viaggio.dart';
 import 'database/viaggio_categoria.dart';
 import 'database/destinazione.dart';
 import 'database/categoria.dart';
-
 import 'dettagliviaggio.dart';
 
 class SearchTripsScreen extends StatefulWidget {
@@ -33,6 +32,16 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
   String? destination;
   List<String> selectedCategories = [];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadViaggi();
+    _loadDestinazioni();
+    _loadCategorie();
+    _loadViaggioCategorie();
+
+  }
+
   // Carica i viaggi e le categorie dal database
   Future<void> _loadViaggi() async {
     try {
@@ -41,47 +50,70 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
       setState(() {
         filterTrips();
       });
+
     } catch (e) {
       print('Error loading viaggi: $e');
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadViaggi();
-    _loadDestinazioni();
-    _loadCategorie();
   }
 
   Future<void> _loadCategorie() async {
     final categorie = await DatabaseHelper.instance.getCategory();
     setState(() {
       _categorie = categorie;
+      filterTrips();
     });
   }
+
+  Future<void> _loadViaggioCategorie() async {
+    try {
+      final db = DatabaseHelper.instance;
+      viaggioCategorie = await db.getViaggioCategoria();
+      print('ViaggioCategorie caricate: ${viaggioCategorie.length}');
+      setState(() {
+        filterTrips();
+      });
+
+    } catch (e) {
+      print('Error loading viaggioCategorie: $e');
+    }
+  }
+
 
   Future<void> _loadDestinazioni() async {
     try {
       final destinazioni = await DatabaseHelper.instance.getDestinations();
       setState(() {
         _destinazioni = destinazioni;
+        filterTrips();
       });
     } catch (e) {
       print('Error loading destinations: $e');
     }
   }
+
   Future<void> filterTrips() async {
     try {
       setState(() {
         final searchTerm = _searchController.text.toLowerCase();
         print('Search term: $searchTerm');
+
         filteredTrips = viaggi.where((trip) {
           // Verifica se il titolo del viaggio corrisponde al termine di ricerca
           final matchesSearchTerm = trip.titolo.toLowerCase().contains(searchTerm);
-          print('Trip: ${trip.titolo}, Matches search term: $matchesSearchTerm');
 
-          return matchesSearchTerm;
+          // Verifica se il viaggio rientra nelle date selezionate
+          final matchesDateRange = (startDate == null || !trip.data_inizio.isBefore(startDate!)) &&
+              (endDate == null || !trip.data_fine.isAfter(endDate!));
+
+          // Verifica se la destinazione del viaggio corrisponde alla destinazione selezionata
+          final matchesDestination = _selectedDestinazione == null || trip.destinazione == _selectedDestinazione;
+
+          // Verifica se il viaggio appartiene a una delle categorie selezionate
+          final matchesCategories = _selectedCategorie.isEmpty || _selectedCategorie.any((categoria) {
+            return viaggioCategorie.any((vc) => vc.viaggio == trip.id_viaggio && vc.categoria == categoria);
+          });
+
+          return matchesSearchTerm && matchesDateRange && matchesDestination && matchesCategories;
         }).toList();
       });
     } catch (e) {
@@ -135,8 +167,6 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
     );
   }
 
-
-
   void showFilterOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -161,7 +191,7 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
                       showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
+                        firstDate: DateTime(2000),
                         lastDate: DateTime(2050),
                       ).then((pickedDate) {
                         if (pickedDate != null) {
@@ -183,7 +213,7 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
                       showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
+                        firstDate: DateTime(2000),
                         lastDate: DateTime(2030),
                       ).then((pickedDate) {
                         if (pickedDate != null) {
@@ -255,8 +285,7 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: () {
-                          // Applica i filtri desiderati
-                          filterTrips();
+                          filterTrips(); // Applica i filtri desiderati
                           Navigator.of(context).pop(); // Chiudi il modal
                         },
                         child: const Text('Mostra'),
@@ -272,7 +301,6 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
     );
   }
 
-
   List<Widget> _buildViaggiList() {
     List<Widget> viaggiWidgets = [];
     for (var v in filteredTrips) { // Usa filteredTrips invece di _viaggio
@@ -281,14 +309,14 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
     return viaggiWidgets;
   }
 
-
-  Widget _buildViaggioCard(viaggio v){
+  Widget _buildViaggioCard(viaggio v) {
     return Card(
       child: ListTile(
         title: Text(v.titolo),
         onTap: () {
           final result = Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) => DettaglioViaggio(v: v,
+            builder: (context) => DettaglioViaggio(
+              v: v,
               onSave: () {
                 _loadViaggi();
               },
@@ -297,7 +325,7 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
 
           // Aggiorna i viaggi e filtra nuovamente dopo il ritorno dalla pagina di dettaglio
           if (result == true) {
-           _loadViaggi();
+            _loadViaggi();
             filterTrips();
           }
         },
@@ -330,9 +358,8 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
-                  filterTrips();
-                 // _loadViaggi();
-                },
+                filterTrips();
+              },
               decoration: const InputDecoration(
                 labelText: 'Cerca viaggio',
                 prefixIcon: Icon(Icons.search),
@@ -341,12 +368,13 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
             ),
           ),
           Expanded(
-            child: filteredTrips.isEmpty ? const Center(child: Text('Nessun viaggio trovato')) : ListView(
-            children: _buildViaggiList(),
-
+            child: filteredTrips.isEmpty
+                ? const Center(child: Text('Nessun viaggio trovato'))
+                : ListView(
+              children: _buildViaggiList(),
             ),
           ),
-      ],
+        ],
       ),
     );
   }

@@ -231,7 +231,7 @@ class DatabaseHelper {
 
   Future<List<viaggio_categoria>> getViaggioCategoria() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('viaggio');
+    final List<Map<String, dynamic>> maps = await db.query('viaggio_categoria');
 
     return List.generate(maps.length, (i) {
       return viaggio_categoria.fromMap(maps[i]);
@@ -310,6 +310,32 @@ class DatabaseHelper {
   }
 
 
+  Future<void> saveOrUpdateRecensione(recensione r) async {
+    final db = await database;
+
+    // Step 1: Check if the foto exists
+    final List<Map<String, dynamic>> maps = await db.query(
+      'recensione',
+      where: 'id_recensione = ?',
+      whereArgs: [r.id_recensione],
+    );
+
+    // Step 2: Update if exists, insert otherwise
+    if (maps.isNotEmpty) {
+      // Foto exists, update it
+      await db.update(
+        'recensione',
+        r.toMap(),
+        where: 'id_recensione = ?',
+        whereArgs: [r.id_recensione],
+      );
+    } else {
+      // Foto does not exist, insert it
+      insertRecensione(r);
+    }
+  }
+
+
   Future<void> deleteViaggio(int id) async {
     final db = await database;
     await db.delete(
@@ -366,8 +392,44 @@ Future<int> getIdFoto(String path) async{
     return result;
   }
 
-  
+  Future<int> getLastRecId() async{
+    final db = await database;
+    var result = await db.rawQuery('SELECT MAX(id_recensione) as max_id FROM recensione');
+    int? id = result.first['max_id'] as int?;
+    return id ?? 0;  // Se il valore è null, restituisce 0
+  }
+
+  Future<String?> getRecensione(int id_viaggio) async{
+    final db = await database;
+    var result = await db.rawQuery('SELECT testo FROM recensione r WHERE r.viaggio=$id_viaggio');
+    return result.first['testo'] as String?;
+  }
+
+  Future<int> getRecIdByViaggio(int id_viaggio) async{
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT viaggio
+      FROM recensione
+      WHERE viaggio = $id_viaggio
+    ''');
+    if (result.isNotEmpty) {
+      return (result.first['viaggio'] as int?) ?? 0; // Restituisci 0 se il valore è nullo
+    } else {
+      return 0; // Restituisci 0 se non ci sono risultati
+    }
+  }
+
+  Future<void> deleteReview(int id_viaggio) async{
+    final db = await database;
+    await db.delete(
+      'recensione',
+      where: 'viaggio = ?',
+      whereArgs: [id_viaggio],
+    );
+  }
+
+
+  }
 
 
 
-}
