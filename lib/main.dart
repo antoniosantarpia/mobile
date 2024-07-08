@@ -90,9 +90,14 @@ class _HomeScreenState extends State<HomeScreen> {
           SearchTripsScreen(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.black87,
-        selectedItemColor: Colors.black,
+      bottomNavigationBar:
+        Container(
+        decoration: BoxDecoration(
+            border: Border.all(color: Colors.red), // Aggiungi un bordo rosso
+        ),
+        child:  BottomNavigationBar(
+        backgroundColor: Colors.green,
+        selectedItemColor: Colors.deepPurple[700],
         unselectedItemColor: Colors.grey,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -103,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Ricerca'),
         ],
       ),
+    ),
     );
   }
 }

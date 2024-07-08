@@ -27,13 +27,15 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
 
   String? _selectedDestinazione;
   List<destinazione> _destinazioni = [];
-  String? _imagePath;
+  List<String> _imagePaths = [];
+  bool _photosUploaded = false;
 
   DateTime? _dataInizio;
   DateTime? _dataFine;
 
   List<String> _selectedCategorie = [];
   List<categoria> _categorie = [];
+  bool _showCategorieError = false;
 
 
   @override
@@ -70,23 +72,25 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
     return savedImage.path;
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImages() async {
     final picker = ImagePicker();
-    try {
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFiles = await picker.pickMultiImage();
 
-      if (pickedFile != null) {
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+      for (var pickedFile in pickedFiles) {
         final imagePath = await _saveImage(File(pickedFile.path));
         setState(() {
-          _imagePath = imagePath;
+          _imagePaths.add(imagePath);
         });
-      } else {
-        print('Nessuna immagine selezionata.');
       }
-    } catch (e){
-      print('Errore durante il pickimage: $e');
+      setState(() {
+        _photosUploaded = true;
+      });
+    } else {
+      print('Nessuna immagine selezionata.');
     }
   }
+
 
   Future<void> _addViaggio() async {
     try {
@@ -126,20 +130,19 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
         await DatabaseHelper.instance.insertViaggioCategoria(newViaggioCategoria);
       }
 
-
-
       final lastidFoto = await DatabaseHelper.instance.getLastImgId();
-      final countFoto = lastidFoto + 1;
+      int newFotoId = lastidFoto + 1;
 
-      if (_imagePath != null) {
+      for (var imagePath in _imagePaths) {
         final newFoto = foto(
-          id_foto: countFoto,
+          id_foto: newFotoId,
           viaggio: count,
-          path: _imagePath!,
+          path: imagePath,
         );
-
+        newFotoId++;
         await DatabaseHelper.instance.insertFoto(newFoto);
       }
+
 
       print('Added Trip: $titolo');
       _titoloController.clear();
@@ -148,7 +151,8 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       _noteController.clear();
       _itinerarioController.clear();
       setState(() {
-        _imagePath = null;
+        _imagePaths.clear();
+        _photosUploaded = false;
       });
     } catch (e) {
       print('Error adding trip: $e');
@@ -202,7 +206,6 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
   }
 
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -246,11 +249,21 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                   return null;
                 },
               ),
+
               ListTile(
                 title: const Text('Categorie Viaggio'),
                 trailing: const Icon(Icons.arrow_drop_down),
                 onTap: _showCategorieDialog,
+
               ),
+              if (_showCategorieError)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    'Per favore seleziona almeno una categoria',
+                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                  ),
+                ),
               Wrap(
                 children: _selectedCategorie.map((categoria) {
                   return Chip(
@@ -341,13 +354,25 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                 },
               ),
               ElevatedButton(
-                onPressed: _pickImage,
-                child: const Text('Carica Foto'),
+                onPressed: _pickImages,
+                child: _photosUploaded
+                    ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.check, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Foto caricate con successo!'),
+                  ],
+                ) : const Text('Carica Foto'),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
+                  setState(() {
+                    _showCategorieError = _selectedCategorie.isEmpty;
+                  });
+
+                  if (_formKey.currentState!.validate() && !_showCategorieError) {
                     await _addViaggio();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Viaggio aggiunto con successo')),
@@ -363,4 +388,5 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       ),
     );
   }
+
 }

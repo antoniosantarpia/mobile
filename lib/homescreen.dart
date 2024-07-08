@@ -34,26 +34,31 @@ class _HomePageContentState extends State<HomePageContent> {
     final viaggiList = await db.getViaggi();
     final destinazioniList = await db.getUltimiViaggiDestinazioni(2);
 
+    viaggio? prossimoViaggio;
+    List<foto>? prossimaFotoList;
 
     // Trova il viaggio più vicino alla data attuale come "Prossimo Viaggio".
-    viaggio? prossimoViaggio;
     DateTime now = DateTime.now();
-    for (var viaggio in viaggiList) {// prendo il prossimo viaggio pianificato
+    for (var viaggio in viaggiList) {
       if (prossimoViaggio == null ||
           viaggio.data_inizio.difference(now).abs().compareTo(prossimoViaggio.data_inizio.difference(now).abs()) < 0) {
         prossimoViaggio = viaggio;
       }
     }
 
-    foto? prossimaFoto;
     if (prossimoViaggio != null) {
-      prossimaFoto = await db.getFotoByViaggioId(prossimoViaggio.id_viaggio);
+      prossimaFotoList = await db.getFotoByViaggioId(prossimoViaggio.id_viaggio);
+      _prossimoViaggio = prossimoViaggio;
+      _prossimaFoto = prossimaFotoList.isNotEmpty ? prossimaFotoList[0] : null;
+    } else {
+      _prossimoViaggio = null;
+      _prossimaFoto = null;
     }
 
     setState(() {
       _destinazioni = destinazioniList;
       _prossimoViaggio = prossimoViaggio;
-      _prossimaFoto = prossimaFoto;
+      _prossimaFoto = _prossimaFoto;
     });
   }
 

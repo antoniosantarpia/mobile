@@ -40,12 +40,15 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
   Future<void> _addDestination() async {
     try {
       final nome = _nomeController.text;
-      //final lastId = await DatabaseHelper.instance.getLastDestinazioneId();
-      //final count = lastId + 1;
 
       final newDestination = destinazione(nome: nome, tripCount: 0);
 
-      await DatabaseHelper.instance.insertDestinazione(newDestination);
+
+
+      if (await DatabaseHelper.instance.insertDestinazione(newDestination) == 1) {
+        _showErrorDialog('La destinazione esiste già.');
+
+      }
       print('Added destination: $nome');
       _nomeController.clear();
       await _loadDestinations();

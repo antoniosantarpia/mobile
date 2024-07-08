@@ -6,7 +6,6 @@ import 'recensione.dart';
 import 'destinazione.dart';
 import 'foto.dart';
 import 'viaggio_categoria.dart';
-import 'package:intl/intl.dart';
 
 class DatabaseHelper {
   DatabaseHelper._privateConstructor();
@@ -100,14 +99,28 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> insertDestinazione(destinazione destinazione) async {
+  Future<int> insertDestinazione(destinazione destinazione) async {
     final db = await database;
-    await db.insert(
-      'destinazione',
-      destinazione.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    final newNome = destinazione.nome;
+
+    final existingDestination = await db.rawQuery('''
+        SELECT nome
+        FROM destinazione d
+        WHERE LOWER(d.nome) = LOWER(?)''', [newNome]); // Usa un segnaposto per evitare l'iniezione SQL
+
+    if (existingDestination.isEmpty) {
+      await db.insert(
+        'destinazione',
+        destinazione.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+      return 0;
+    } else {
+      return 1;
+    }
   }
+
+
 
   Future<void> insertRecensione(recensione recensione) async {
     final db = await database;
@@ -355,18 +368,23 @@ Future<int> getIdFoto(String path) async{
   return foto.fromMap(maps.first).id_foto;
 }
 
-  Future<foto?> getFotoByViaggioId(int viaggio) async {
+  Future<List<foto>> getFotoByViaggioId(int viaggio) async {
     final db = await instance.database;
-    final maps = await db.query(
+    final List<Map<String, dynamic>> maps = await db.query(
       'foto',
       where: 'viaggio = ?',
       whereArgs: [viaggio],
     );
-    if (maps.isNotEmpty) {
-      return foto.fromMap(maps.first);
-    } else {
-      return null;
-    }
+    return List.generate(maps.length, (i) {
+      return foto.fromMap(maps[i]);
+    });
+  }
+
+  Future<int?> getPhotoId() async {
+    final db = await instance.database;
+    final result = await db.rawQuery('SELECT MAX(id_foto) as id FROM foto');
+    int? lastPhotoId = Sqflite.firstIntValue(result);
+    return lastPhotoId;
   }
 
   Future<int> getTotalTripsDone() async {
@@ -399,18 +417,18 @@ Future<int> getIdFoto(String path) async{
     return id ?? 0;  // Se il valore è null, restituisce 0
   }
 
-  Future<String?> getRecensione(int id_viaggio) async{
+  Future<String?> getRecensione(int idViaggio) async{
     final db = await database;
-    var result = await db.rawQuery('SELECT testo FROM recensione r WHERE r.viaggio=$id_viaggio');
+    var result = await db.rawQuery('SELECT testo FROM recensione r WHERE r.viaggio=$idViaggio');
     return result.first['testo'] as String?;
   }
 
-  Future<int> getRecIdByViaggio(int id_viaggio) async{
+  Future<int> getRecIdByViaggio(int idViaggio) async{
     final db = await database;
     final result = await db.rawQuery('''
       SELECT viaggio
       FROM recensione
-      WHERE viaggio = $id_viaggio
+      WHERE viaggio = $idViaggio
     ''');
     if (result.isNotEmpty) {
       return (result.first['viaggio'] as int?) ?? 0; // Restituisci 0 se il valore è nullo
@@ -419,12 +437,12 @@ Future<int> getIdFoto(String path) async{
     }
   }
 
-  Future<void> deleteReview(int id_viaggio) async{
+  Future<void> deleteReview(int idViaggio) async{
     final db = await database;
     await db.delete(
       'recensione',
       where: 'viaggio = ?',
-      whereArgs: [id_viaggio],
+      whereArgs: [idViaggio],
     );
   }
 

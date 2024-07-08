@@ -39,7 +39,6 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
     _loadDestinazioni();
     _loadCategorie();
     _loadViaggioCategorie();
-
   }
 
   // Carica i viaggi e le categorie dal database
@@ -50,7 +49,6 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
       setState(() {
         filterTrips();
       });
-
     } catch (e) {
       print('Error loading viaggi: $e');
     }
@@ -72,12 +70,10 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
       setState(() {
         filterTrips();
       });
-
     } catch (e) {
       print('Error loading viaggioCategorie: $e');
     }
   }
-
 
   Future<void> _loadDestinazioni() async {
     try {
@@ -109,7 +105,7 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
           final matchesDestination = _selectedDestinazione == null || trip.destinazione == _selectedDestinazione;
 
           // Verifica se il viaggio appartiene a una delle categorie selezionate
-          final matchesCategories = _selectedCategorie.isEmpty || _selectedCategorie.any((categoria) {
+          final matchesCategories = _selectedCategorie.isEmpty || _selectedCategorie.every((categoria) {
             return viaggioCategorie.any((vc) => vc.viaggio == trip.id_viaggio && vc.categoria == categoria);
           });
 
@@ -167,139 +163,6 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
     );
   }
 
-  void showFilterOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Filtri',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Data Partenza'),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2050),
-                      ).then((pickedDate) {
-                        if (pickedDate != null) {
-                          setModalState(() {
-                            startDate = pickedDate;
-                          });
-                        }
-                      });
-                    },
-                    child: Text(startDate != null
-                        ? '${startDate!.day}/${startDate!.month}/${startDate!.year}'
-                        : 'Seleziona Data'),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Data Ritorno'),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2030),
-                      ).then((pickedDate) {
-                        if (pickedDate != null) {
-                          setModalState(() {
-                            endDate = pickedDate;
-                          });
-                        }
-                      });
-                    },
-                    child: Text(endDate != null
-                        ? '${endDate!.day}/${endDate!.month}/${endDate!.year}'
-                        : 'Seleziona Data'),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Destinazione'),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Destinazione Viaggio'),
-                    value: _selectedDestinazione,
-                    items: _destinazioni.map((destinazione) {
-                      return DropdownMenuItem<String>(
-                        value: destinazione.nome,
-                        child: Text(destinazione.nome),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setModalState(() {
-                        _selectedDestinazione = value;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Per favore seleziona una destinazione';
-                      }
-                      return null;
-                    },
-                  ),
-                  ListTile(
-                    title: const Text('Categorie Viaggio'),
-                    trailing: const Icon(Icons.arrow_drop_down),
-                    onTap: () async {
-                      await _showCategorieDialog();
-                      setModalState(() {});
-                    },
-                  ),
-                  Wrap(
-                    children: _selectedCategorie.map((categoria) {
-                      return Chip(
-                        label: Text(categoria),
-                        onDeleted: () {
-                          setModalState(() {
-                            _selectedCategorie.remove(categoria);
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(); // Chiudi il modal
-                        },
-                        style: ElevatedButton.styleFrom(),
-                        child: const Text('Annulla'),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          filterTrips(); // Applica i filtri desiderati
-                          Navigator.of(context).pop(); // Chiudi il modal
-                        },
-                        child: const Text('Mostra'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 
   List<Widget> _buildViaggiList() {
     List<Widget> viaggiWidgets = [];
@@ -377,7 +240,169 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
         ],
       ),
     );
+  }void showFilterOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SingleChildScrollView( // Aggiunto SingleChildScrollView
+              child: Container(
+                padding: const EdgeInsets.all(30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Filtri',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Data Partenza'),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2050),
+                        ).then((pickedDate) {
+                          if (pickedDate != null) {
+                            setModalState(() {
+                              startDate = pickedDate;
+                            });
+                          }
+                        });
+                      },
+                      child: Text(startDate != null
+                          ? '${startDate!.day}/${startDate!.month}/${startDate!.year}'
+                          : 'Seleziona Data'),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Data Ritorno'),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2050),
+                        ).then((pickedDate) {
+                          if (pickedDate != null) {
+                            setModalState(() {
+                              if (startDate != null && pickedDate.isBefore(startDate!)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('La data di ritorno non può essere precedente alla data di partenza.'),
+                                  ),
+                                );
+                              } else {
+                                endDate = pickedDate;
+                              }
+                            });
+                          }
+                        });
+                      },
+                      child: Text(endDate != null
+                          ? '${endDate!.day}/${endDate!.month}/${endDate!.year}'
+                          : 'Seleziona Data'),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Destinazione'),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Destinazione Viaggio'),
+                      value: _selectedDestinazione,
+                      items: _destinazioni.map((destinazione) {
+                        return DropdownMenuItem<String>(
+                          value: destinazione.nome,
+                          child: Text(destinazione.nome),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setModalState(() {
+                          _selectedDestinazione = value;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Per favore seleziona una destinazione';
+                        }
+                        return null;
+                      },
+                    ),
+                    ListTile(
+                      title: const Text('Categorie Viaggio'),
+                      trailing: const Icon(Icons.arrow_drop_down),
+                      onTap: () async {
+                        await _showCategorieDialog();
+                        setModalState(() {});
+                      },
+                    ),
+                    Wrap(
+                      children: _selectedCategorie.map((categoria) {
+                        return Chip(
+                          label: Text(categoria),
+                          onDeleted: () {
+                            setModalState(() {
+                              _selectedCategorie.remove(categoria);
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16), // Padding tra categorie e pulsanti
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            setModalState(() {
+                              startDate = null;
+                              endDate = null;
+                              _selectedDestinazione = null;
+                              _selectedCategorie.clear();
+                            });
+                            filterTrips(); // Azzera i filtri e applica l'aggiornamento
+                            Navigator.of(context).pop();
+                          },
+                          style: ElevatedButton.styleFrom(),
+                          child: const Text('Azzera filtri'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            filterTrips(); // Applica i filtri desiderati
+                            Navigator.of(context).pop(); // Chiudi il modal
+                          },
+                          child: const Text('Mostra'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
+
+
 
   @override
   void dispose() {
