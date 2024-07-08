@@ -1,8 +1,8 @@
 class viaggio {
   final int id_viaggio;
   final String titolo;
-  final String note;
-  final String itinerario;
+  final String? note;
+  final String? itinerario;
   final DateTime data_inizio;
   final DateTime data_fine;
   final String destinazione;

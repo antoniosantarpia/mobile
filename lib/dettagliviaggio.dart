@@ -34,7 +34,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
   DateTime? _dataFine;
   String? _selectedDestinazione;
   List<destinazione> _destinazioni = [];
-  List<categoria> _selectedCategorie = [];
+  List<categoria> selectedCategorie = [];
   List<categoria> _categorie = [];
   String? _recensione;
   List<String> _currentImagePaths = []; // Aggiungi questo campo per l'immagine attuale
@@ -99,7 +99,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
     final selectedCat = await DatabaseHelper.instance.getCategoryOfTrip(widget.v.id_viaggio);
     setState(() {
       _categorie = categorie;
-      _selectedCategorie = selectedCat;
+      selectedCategorie = selectedCat;
     });
   }
 
@@ -155,7 +155,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
       await _saveImages(widget.v.id_viaggio);
       await DatabaseHelper.instance.updateViaggio(updatedViaggio);
 
-      for (var categoria in _selectedCategorie) {
+      for (var categoria in selectedCategorie) {
         final viaggioCategoria = viaggio_categoria(
           viaggio: widget.v.id_viaggio,
           categoria: categoria.nome,
@@ -198,7 +198,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
     // Get the last used ID for photos
     int lastPhotoId = await DatabaseHelper.instance.getPhotoId() ?? 0;
 
-    // Iterate through current images and save only new ones
+    // permetto di inserire le foto aggiunte alla collezione di foto
     for (var imagePath in _currentImagePaths) {
       if (!_previousImagePaths.contains(imagePath)) {
         final fotoInstance = foto(
@@ -208,6 +208,14 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
         );
         await DatabaseHelper.instance.saveOrUpdateFoto(fotoInstance);
         lastPhotoId++; // Increment the ID for the next photo
+      }
+    }
+
+    // se tra le immagini correnti non compare un'immagine precedente, allora significa che è stata eliminata
+    // quindi eliminarla anche dal db
+    for (var imagePath in _previousImagePaths){
+      if(!_currentImagePaths.contains(imagePath)){
+        await DatabaseHelper.instance.deleteFoto(imagePath);
       }
     }
   }
@@ -226,15 +234,15 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                   children: _categorie.map((categoria) {
                     return CheckboxListTile(
                       title: Text(categoria.nome),
-                      value: _selectedCategorie.contains(categoria),
+                      value: selectedCategorie.contains(categoria),
                       onChanged: (bool? value) {
                         setDialogState(() {
                           if (value == true) {
-                            if (!_selectedCategorie.contains(categoria)) {
-                              _selectedCategorie.add(categoria);
+                            if (!selectedCategorie.contains(categoria)) {
+                              selectedCategorie.add(categoria);
                             }
                           } else {
-                            _selectedCategorie.remove(categoria);
+                            selectedCategorie.remove(categoria);
                           }
                         });
                       },
@@ -247,7 +255,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                   child: const Text('OK'),
                   onPressed: () {
                     setState(() {
-                      _selectedCategorie;
+                      selectedCategorie;
                     });
                     Navigator.of(context).pop();
                   },
@@ -265,17 +273,29 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
     final pickedFiles = await ImagePicker().pickMultiImage(
       maxWidth: 800,
     );
-    if (pickedFiles != null) {
-      setState(() {
-        _currentImagePaths.addAll(pickedFiles.map((file) => file.path));
-      });
+    setState(() {
+      _currentImagePaths.addAll(pickedFiles.map((file) => file.path));
+    });
     }
-  }
 
   void _removeImage(int index) {
     setState(() {
       _currentImagePaths.removeAt(index);
     });
+  }
+
+  Future<void> _deleteViaggioAndVerifyCategory() async{
+
+    int count = 0;
+    await DatabaseHelper.instance.deleteViaggio(widget.v.id_viaggio);
+    for(categoria c in selectedCategorie){
+      count = await DatabaseHelper.instance.verifyCategory(c);
+      if(count==0){
+        await DatabaseHelper.instance.deleteCategory(c);
+      }
+    }
+
+    await DatabaseHelper.instance.deleteViaggio(widget.v.id_viaggio);
   }
 
   @override
@@ -285,9 +305,9 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
         title: Text(widget.v.titolo),
         actions: [
           IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: () async {
-              await DatabaseHelper.instance.deleteViaggio(widget.v.id_viaggio);
+            icon: const Icon(Icons.delete),
+            onPressed: (){
+              _deleteViaggioAndVerifyCategory();
               widget.onSave(); // Aggiorna la schermata precedente
               Navigator.of(context).pop(); // Chiudi la schermata di dettaglio
             },
@@ -295,14 +315,14 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
               if (_currentImagePaths.isNotEmpty)
                 GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3, // Numero di immagini per riga
                     crossAxisSpacing: 8.0,
                     mainAxisSpacing: 8.0,
@@ -319,7 +339,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                         Positioned(
                           right: 0,
                           child: IconButton(
-                            icon: Icon(Icons.remove_circle, color: Colors.red),
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
                             onPressed: () => _removeImage(index),
                           ),
                         ),
@@ -333,7 +353,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
               ),
               TextFormField(
                 controller: _titoloController,
-                decoration: InputDecoration(labelText: 'Titolo'),
+                decoration: const InputDecoration(labelText: 'Titolo'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Inserisci un titolo';
@@ -346,7 +366,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                 child: AbsorbPointer(
                   child: TextFormField(
                     controller: _dataInizioController,
-                    decoration: InputDecoration(labelText: 'Data Inizio'),
+                    decoration: const InputDecoration(labelText: 'Data Inizio'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Inserisci una data di inizio';
@@ -361,7 +381,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                 child: AbsorbPointer(
                   child: TextFormField(
                     controller: _dataFineController,
-                    decoration: InputDecoration(labelText: 'Data Fine'),
+                    decoration: const InputDecoration(labelText: 'Data Fine'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Inserisci una data di fine';
@@ -373,7 +393,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
               ),
               DropdownButtonFormField<String>(
                 value: _selectedDestinazione,
-                decoration: InputDecoration(labelText: 'Destinazione'),
+                decoration: const InputDecoration(labelText: 'Destinazione'),
                 items: _destinazioni.map((destinazione d) {
                   return DropdownMenuItem<String>(
                     value: d.nome,
@@ -394,24 +414,27 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
               ),
               TextFormField(
                 controller: _itinerarioController,
-                decoration: InputDecoration(labelText: 'Itinerario'),
+                decoration: const InputDecoration(labelText: 'Itinerario'),
               ),
               TextFormField(
                 controller: _noteController,
-                decoration: InputDecoration(labelText: 'Note'),
+                decoration: const InputDecoration(labelText: 'Note'),
               ),
               ListTile(
-                title: Text('Categorie Viaggio'),
-                trailing: Icon(Icons.arrow_drop_down),
+                title: const Text('Categorie Viaggio'),
+                trailing: const Icon(Icons.arrow_drop_down),
                 onTap: _showCategorieDialog,
               ),
               Wrap(
-                children: _selectedCategorie.map((categoria) {
+                spacing: 10,
+                runSpacing: 10,
+                children: selectedCategorie.map((categoria) {
                   return Chip(
                     label: Text(categoria.nome),
+                    padding: const EdgeInsets.all(10),
                     onDeleted: () {
                       setState(() {
-                        _selectedCategorie.remove(categoria);
+                        selectedCategorie.remove(categoria);
                       });
                     },
                   );
@@ -420,7 +443,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
               if (_dataFine != null && _dataFine!.isBefore(DateTime.now()))
                 TextFormField(
                   controller: _recensioneController,
-                  decoration: InputDecoration(labelText: 'Recensione'),
+                  decoration: const InputDecoration(labelText: 'Recensione'),
                   maxLines: 4,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -441,7 +464,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                     }
                   }
                 },
-                child: Text('Salva Modifiche'),
+                child: const Text('Salva Modifiche'),
               ),
             ],
           ),

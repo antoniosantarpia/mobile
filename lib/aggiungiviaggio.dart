@@ -27,7 +27,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
 
   String? _selectedDestinazione;
   List<destinazione> _destinazioni = [];
-  List<String> _imagePaths = [];
+  final List<String> _imagePaths = [];
   bool _photosUploaded = false;
 
   DateTime? _dataInizio;
@@ -76,7 +76,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
     final picker = ImagePicker();
     final pickedFiles = await picker.pickMultiImage();
 
-    if (pickedFiles != null && pickedFiles.isNotEmpty) {
+    if (pickedFiles.isNotEmpty) {
       for (var pickedFile in pickedFiles) {
         final imagePath = await _saveImage(File(pickedFile.path));
         setState(() {
@@ -103,14 +103,14 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       final itinerario = _itinerarioController.text;
 
       final lastId = await DatabaseHelper.instance.getLastViaggioId();
-      final count = lastId + 1;
+      final newId = lastId + 1;
 
       if (_selectedDestinazione == null) {
         throw Exception('Per favore seleziona una destinazione');
       }
 
       final newViaggio = viaggio(
-        id_viaggio: count,
+        id_viaggio: newId,
         titolo: titolo,
         data_inizio: formatter.parse(dataInizio),
         data_fine: formatter.parse(dataFine),
@@ -125,10 +125,16 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       for (String categoria in _selectedCategorie) {
         final newViaggioCategoria = viaggio_categoria(
           categoria: categoria,
-          viaggio: count,
+          viaggio: newId,
         );
         await DatabaseHelper.instance.insertViaggioCategoria(newViaggioCategoria);
       }
+
+      // elimina una categoria se non è associata a nessun viaggio
+        //await DatabaseHelper.instance.verifyCategory();
+      //await DatabaseHelper.instance.deleteCategory();
+          
+
 
       final lastidFoto = await DatabaseHelper.instance.getLastImgId();
       int newFotoId = lastidFoto + 1;
@@ -136,7 +142,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       for (var imagePath in _imagePaths) {
         final newFoto = foto(
           id_foto: newFotoId,
-          viaggio: count,
+          viaggio: newId,
           path: imagePath,
         );
         newFotoId++;
@@ -206,6 +212,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
   }
 
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -213,7 +220,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
         title: const Text('Aggiungi Viaggio'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: ListView(
@@ -249,33 +256,52 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                   return null;
                 },
               ),
-
               ListTile(
                 title: const Text('Categorie Viaggio'),
                 trailing: const Icon(Icons.arrow_drop_down),
                 onTap: _showCategorieDialog,
-
               ),
               if (_showCategorieError)
-                Padding(
+                Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Per favore seleziona almeno una categoria',
-                    style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Per favore seleziona almeno una categoria',
+                        style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        children: _selectedCategorie.map((categoria) {
+                          return Chip(
+                            label: Text(categoria),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedCategorie.remove(categoria);
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ),
+                )
+              else
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: _selectedCategorie.map((categoria) {
+                    return Chip(
+                      label: Text(categoria),
+                      onDeleted: () {
+                        setState(() {
+                          _selectedCategorie.remove(categoria);
+                        });
+                      },
+                    );
+                  }).toList(),
                 ),
-              Wrap(
-                children: _selectedCategorie.map((categoria) {
-                  return Chip(
-                    label: Text(categoria),
-                    onDeleted: () {
-                      setState(() {
-                        _selectedCategorie.remove(categoria);
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
               TextFormField(
                 controller: _dataInizioController,
                 decoration: const InputDecoration(labelText: 'Data Inizio'),
@@ -295,6 +321,12 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                     });
                   }
                 },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Per favore inserisci la data di inizio';
+                  }
+                  return null;
+                },
               ),
               TextFormField(
                 controller: _dataFineController,
@@ -305,7 +337,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                     context: context,
                     initialDate: DateTime.now(),
                     firstDate: DateTime(2000),
-                    lastDate: DateTime(2101),
+                    lastDate: DateTime(2100),
                   );
                   if (pickedDate != null) {
                     if (_dataInizio != null && pickedDate.isBefore(_dataInizio!)) {
@@ -336,34 +368,23 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
               TextFormField(
                 controller: _itinerarioController,
                 decoration: const InputDecoration(labelText: 'Itinerario'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Per favore inserisci l\'itinerario del viaggio';
-                  }
-                  return null;
-                },
               ),
               TextFormField(
                 controller: _noteController,
                 decoration: const InputDecoration(labelText: 'Note'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Per favore inserisci delle note per il viaggio';
-                  }
-                  return null;
-                },
               ),
               ElevatedButton(
                 onPressed: _pickImages,
                 child: _photosUploaded
-                    ? Row(
+                    ? const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.check, color: Colors.white),
                     SizedBox(width: 8),
                     Text('Foto caricate con successo!'),
                   ],
-                ) : const Text('Carica Foto'),
+                )
+                    : const Text('Carica Foto'),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -388,5 +409,4 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
       ),
     );
   }
-
 }

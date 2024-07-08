@@ -358,6 +358,18 @@ class DatabaseHelper {
     );
   }
 
+
+  Future<void> deleteFoto(String path) async {
+    final db = await database;
+    await db.delete(
+      'foto',
+      where: 'path = ?',
+      whereArgs: [path],
+    );
+  }
+
+
+
 Future<int> getIdFoto(String path) async{
   final db = await instance.database;
   final maps = await db.query(
@@ -437,12 +449,35 @@ Future<int> getIdFoto(String path) async{
     }
   }
 
+  Future<int> verifyCategory(categoria c) async{
+    final db = await database;
+    final nomeCat = c.nome;
+    final result = await db.rawQuery('''
+       SELECT count(*) as c
+      FROM viaggio_categoria vc 
+      WHERE vc.categoria = ?
+      ''', [nomeCat]);
+
+    int? id = result.first['c'] as int?;
+    return id ?? 0;
+  }
+
   Future<void> deleteReview(int idViaggio) async{
     final db = await database;
     await db.delete(
       'recensione',
       where: 'viaggio = ?',
       whereArgs: [idViaggio],
+    );
+  }
+
+  Future<void> deleteCategory(categoria c) async{
+    final db = await database;
+    final nomeCat = c.nome;
+    await db.delete(
+      'categoria',
+      where: 'nome = ?',
+      whereArgs: [nomeCat],
     );
   }
 

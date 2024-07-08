@@ -14,9 +14,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: HomeScreen(),
-      debugShowCheckedModeBanner: false,
+    return DefaultTextStyle(
+      style: const TextStyle(
+        fontSize: 16.0,
+        fontWeight: FontWeight.normal,
+        fontStyle: FontStyle.normal,
+        fontFamily: 'Helvetica',
+      ),
+      child: MaterialApp(
+        title: 'Travel Manager',
+        theme: ThemeData(
+          primarySwatch: Colors.deepPurple,
+          scaffoldBackgroundColor: Colors.white,
+          appBarTheme: const AppBarTheme(
+            toolbarHeight: 80,
+            backgroundColor: Color.fromRGBO(227, 186, 245, 1),
+          ),
+        ),
+        debugShowCheckedModeBanner: false,
+        home: const HomeScreen(),
+      ),
     );
   }
 }
@@ -39,28 +56,34 @@ class _HomeScreenState extends State<HomeScreen> {
     _pageController.animateToPage(index,
         duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 100,
-        backgroundColor: Colors.black87,
+        toolbarHeight: 90,
+        backgroundColor: Colors.deepPurple,
         title: Row(
           children: [
             const SizedBox(width: 3),
             Image.asset(
               'assets/images/icon.png', // Percorso dell'icona aggiunta
-              height: 53, // Altezza desiderata dell'icona
+              height: 45, // Altezza desiderata dell'icona
             ),
             const SizedBox(width: 8),
-            const Text(
-              'Travel Manager',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+           const  Expanded(
+              child: Text(
+                'Travel Manager',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Helvetica-BoldOblique',
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 24, // Dimensione del font ridotta
+                  overflow: TextOverflow.ellipsis, // Aggiunto per prevenire overflow
+                ),
+              ),
             ),
-            Expanded(
-              child: Container(),
-            ),
+            const SizedBox(width: 8),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -69,9 +92,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.black,
+                backgroundColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                side: const BorderSide(
+                  color: Colors.white,
+                  width: 2,
+                ),
               ),
-              child: const Text('Statistiche'),
+              child: const Text(
+                'Statistiche',
+                style: TextStyle(fontSize: 16),
+              ),
             ),
           ],
         ),
@@ -90,25 +121,34 @@ class _HomeScreenState extends State<HomeScreen> {
           SearchTripsScreen(),
         ],
       ),
-      bottomNavigationBar:
-        Container(
+      bottomNavigationBar: Container(
+        height: 75,
         decoration: BoxDecoration(
-            border: Border.all(color: Colors.red), // Aggiungi un bordo rosso
+          boxShadow: [
+            BoxShadow(
+              color: Colors.deepPurple.withOpacity(0.6),
+              spreadRadius: 4,
+              blurRadius: 6,
+              offset: const Offset(0, 1), // Ombra
+            ),
+          ],
         ),
-        child:  BottomNavigationBar(
-        backgroundColor: Colors.green,
-        selectedItemColor: Colors.deepPurple[700],
-        unselectedItemColor: Colors.grey,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.airplanemode_active), label: 'Viaggi'),
-          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: 'Destinazioni'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Ricerca'),
-        ],
+        child: BottomNavigationBar(
+          selectedItemColor: Colors.deepPurple[900],
+          selectedFontSize: 18,
+          unselectedItemColor: Colors.grey,
+          unselectedFontSize: 12,
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home, size: 25), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.airplanemode_active, size: 25), label: 'Viaggi'),
+            BottomNavigationBarItem(icon: Icon(Icons.location_on, size: 25), label: 'Destinazioni'),
+            BottomNavigationBarItem(icon: Icon(Icons.search, size: 25), label: 'Ricerca'),
+          ],
+        ),
       ),
-    ),
     );
   }
+
 }
