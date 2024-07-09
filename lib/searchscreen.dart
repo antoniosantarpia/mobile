@@ -240,7 +240,9 @@ class _SearchTripsScreenState extends State<SearchTripsScreen> {
         ],
       ),
     );
-  }void showFilterOptions(BuildContext context) {
+  }
+
+  void showFilterOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
