@@ -36,6 +36,7 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
   List<String> _selectedCategorie = [];
   List<categoria> _categorie = [];
   bool _showCategorieError = false;
+  bool _showDateError = false;
 
 
   @override
@@ -109,58 +110,73 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
         throw Exception('Per favore seleziona una destinazione');
       }
 
-      if(await DatabaseHelper.instance.verifyDateTrip(dataInizio, dataFine) == 0){
-
-      }
-      final newViaggio = viaggio(
-        id_viaggio: newId,
-        titolo: titolo,
-        data_inizio: formatter.parse(dataInizio),
-        data_fine: formatter.parse(dataFine),
-        note: note,
-        itinerario: itinerario,
-        destinazione: _selectedDestinazione!,
-
+      // Formatta le date per la verifica
+      final dateCheck = await DatabaseHelper.instance.verifyDateTrip(
+          DateFormat('yyyy-MM-dd').format(formatter.parse(dataInizio)),
+          DateFormat('yyyy-MM-dd').format(formatter.parse(dataFine))
       );
 
-      await DatabaseHelper.instance.insertViaggio(newViaggio);
+      if (dateCheck != 0) {
+        setState(() {
+          _showDateError = true;
+        });
+      } else {
+        setState(() {
+          _showDateError = false;
+        });
 
-      for (String categoria in _selectedCategorie) {
-        final newViaggioCategoria = viaggio_categoria(
-          categoria: categoria,
-          viaggio: newId,
-        );
-        await DatabaseHelper.instance.insertViaggioCategoria(newViaggioCategoria);
+        if (!_showDateError) {
+          final newViaggio = viaggio(
+            id_viaggio: newId,
+            titolo: titolo,
+            data_inizio: formatter.parse(dataInizio),
+            data_fine: formatter.parse(dataFine),
+            note: note,
+            itinerario: itinerario,
+            destinazione: _selectedDestinazione!,
+          );
+
+          await DatabaseHelper.instance.insertViaggio(newViaggio);
+
+          for (String categoria in _selectedCategorie) {
+            final newViaggioCategoria = viaggio_categoria(
+              categoria: categoria,
+              viaggio: newId,
+            );
+            await DatabaseHelper.instance.insertViaggioCategoria(newViaggioCategoria);
+          }
+
+          final lastidFoto = await DatabaseHelper.instance.getLastImgId();
+          int newFotoId = lastidFoto + 1;
+
+          for (var imagePath in _imagePaths) {
+            final newFoto = foto(
+              id_foto: newFotoId,
+              viaggio: newId,
+              path: imagePath,
+            );
+            newFotoId++;
+            await DatabaseHelper.instance.insertFoto(newFoto);
+          }
+
+          print('Added Trip: $titolo');
+          _titoloController.clear();
+          _dataInizioController.clear();
+          _dataFineController.clear();
+          _noteController.clear();
+          _itinerarioController.clear();
+          setState(() {
+            _imagePaths.clear();
+            _photosUploaded = false;
+          });
+        }
       }
-
-      final lastidFoto = await DatabaseHelper.instance.getLastImgId();
-      int newFotoId = lastidFoto + 1;
-
-      for (var imagePath in _imagePaths) {
-        final newFoto = foto(
-          id_foto: newFotoId,
-          viaggio: newId,
-          path: imagePath,
-        );
-        newFotoId++;
-        await DatabaseHelper.instance.insertFoto(newFoto);
-      }
-
-
-      print('Added Trip: $titolo');
-      _titoloController.clear();
-      _dataInizioController.clear();
-      _dataFineController.clear();
-      _noteController.clear();
-      _itinerarioController.clear();
-      setState(() {
-        _imagePaths.clear();
-        _photosUploaded = false;
-      });
     } catch (e) {
       print('Error adding trip: $e');
     }
   }
+
+
 
   Future<void> _showCategorieDialog() async {
     final selectedCategorieTemp = List<String>.from(_selectedCategorie);
@@ -384,22 +400,46 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
                     : const Text('Carica Foto'),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  setState(() {
-                    _showCategorieError = _selectedCategorie.isEmpty;
-                  });
+            ElevatedButton(
+            onPressed: () async {
+            setState(() {
+            _showCategorieError = _selectedCategorie.isEmpty;
+            });
 
-                  if (_formKey.currentState!.validate() && !_showCategorieError) {
-                    await _addViaggio();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Viaggio aggiunto con successo')),
-                    );
-                    Navigator.pop(context, true);
-                  }
-                },
-                child: const Text('Salva Viaggio'),
-              ),
+            final formatter = DateFormat('dd/MM/yyyy');
+
+            final dataInizio = _dataInizioController.text;
+            final dataFine = _dataFineController.text;
+
+            final dateCheck = await DatabaseHelper.instance.verifyDateTrip(
+            DateFormat('yyyy-MM-dd').format(formatter.parse(dataInizio)),
+            DateFormat('yyyy-MM-dd').format(formatter.parse(dataFine)),
+            );
+
+            if (dateCheck != 0) {
+            setState(() {
+            _showDateError = true;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Hai già un viaggio in queste date')),
+            );
+            } else {
+            setState(() {
+            _showDateError = false;
+            });
+
+            if (_formKey.currentState!.validate() && !_showCategorieError && !_showDateError) {
+            await _addViaggio();
+            ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Viaggio aggiunto con successo')),
+            );
+            Navigator.pop(context, true);
+            }
+            }
+            },
+            child: const Text('Salva Viaggio'),
+            )
+
             ],
           ),
         ),

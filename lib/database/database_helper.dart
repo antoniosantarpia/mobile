@@ -6,6 +6,7 @@ import 'recensione.dart';
 import 'destinazione.dart';
 import 'foto.dart';
 import 'viaggio_categoria.dart';
+import 'package:intl/intl.dart';
 
 class DatabaseHelper {
   DatabaseHelper._privateConstructor();
@@ -478,21 +479,39 @@ Future<int> getIdFoto(String path) async{
       return 0; // Restituisci 0 se non ci sono risultati
     }
   }
-
-  Future<int> verifyDateTrip(String dataInizio, String dataFine) async{
+  Future<int> verifyDateTrip(String dataInizio, String dataFine) async {
     final db = await database;
-    final result = await db.rawQuery('''
-      SELECT *
-      FROM viaggio v
-      WHERE 
-    ''');
+
+    // Converti le date in formato DateTime per confrontare correttamente
+    final DateTime dataInizioDateTime = DateFormat('yyyy-MM-dd').parse(dataInizio);
+    final DateTime dataFineDateTime = DateFormat('yyyy-MM-dd').parse(dataFine);
+
+    // Query per trovare viaggi con date sovrapposte
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+  SELECT id_viaggio
+  FROM viaggio
+  WHERE 
+    (date(data_inizio) BETWEEN date(?) AND date(?)) 
+    OR (date(data_fine) BETWEEN date(?) AND date(?))
+    OR (date(?) BETWEEN date(data_inizio) AND date(data_fine))
+    OR (date(?) BETWEEN date(data_inizio) AND date(data_fine))
+  ''', [
+      DateFormat('yyyy-MM-dd').format(dataInizioDateTime),
+      DateFormat('yyyy-MM-dd').format(dataFineDateTime),
+      DateFormat('yyyy-MM-dd').format(dataInizioDateTime),
+      DateFormat('yyyy-MM-dd').format(dataFineDateTime),
+      DateFormat('yyyy-MM-dd').format(dataInizioDateTime),
+      DateFormat('yyyy-MM-dd').format(dataFineDateTime),
+    ]);
+
+    // Se la query trova risultati, restituisci l'ID del primo viaggio trovato
     if (result.isNotEmpty) {
-      return (result.first['id_recensione'] as int?) ?? 0; // Restituisci 0 se il valore è nullo
+      return (result.first['id_viaggio'] as int?) ?? 0;
     } else {
       return 0; // Restituisci 0 se non ci sono risultati
     }
-
   }
+
 
   Future<int> verifyCategory(categoria c) async{
     final db = await database;
