@@ -104,11 +104,13 @@ class DatabaseHelper {
     final db = await database;
     final newNome = destinazione.nome;
 
+    // confrontiamo il nome della destinazione in lower case
     final existingDestination = await db.rawQuery('''
         SELECT nome
         FROM destinazione d
-        WHERE LOWER(d.nome) = LOWER(?)''', [newNome]); // Usa un segnaposto per evitare l'iniezione SQL
+        WHERE LOWER(d.nome) = LOWER(?)''', [newNome]);
 
+    // verifichiamo se è già presente la destinazione
     if (existingDestination.isEmpty) {
       await db.insert(
         'destinazione',
@@ -120,7 +122,6 @@ class DatabaseHelper {
       return 1;
     }
   }
-
 
 
   Future<void> insertRecensione(recensione recensione) async {
@@ -136,11 +137,13 @@ class DatabaseHelper {
     final db = await database;
     final newNome = categoria.nome;
 
+    // confrontiamo il nome della categoria in lower case
     final existingCategory = await db.rawQuery('''
         SELECT nome
         FROM categoria c
         WHERE LOWER(c.nome) = LOWER(?)''', [newNome]);
 
+    // verifichiamo se quella categoria è gia presente
     if(existingCategory.isEmpty){
       await db.insert(
         'categoria',
@@ -163,7 +166,6 @@ class DatabaseHelper {
     );
   }
 
-
   Future<List<destinazione>> getDestinations() async {
     final db = await database;
     final List<Map<String, Object?>> maps = await db.query('destinazione');
@@ -182,7 +184,7 @@ class DatabaseHelper {
 
     return List.generate(maps.length, (i) {
       return categoria(
-        nome: maps[i]['nome'] as String
+          nome: maps[i]['nome'] as String
       );
     });
   }
@@ -207,12 +209,30 @@ class DatabaseHelper {
   Future<void> deleteDestinazione(String nome) async {
     final db = await database;
 
-      await db.delete(
-        'destinazione',
-        where: 'nome = ?',
-        whereArgs: [nome],
-      );
+    await db.delete(
+      'destinazione',
+      where: 'nome = ?',
+      whereArgs: [nome],
+    );
+  }
 
+  Future<void> deleteReview(int idViaggio) async{
+    final db = await database;
+    await db.delete(
+      'recensione',
+      where: 'viaggio = ?',
+      whereArgs: [idViaggio],
+    );
+  }
+
+  Future<void> deleteCategory(categoria c) async{
+    final db = await database;
+    final nomeCat = c.nome;
+    await db.delete(
+      'categoria',
+      where: 'nome = ?',
+      whereArgs: [nomeCat],
+    );
   }
 
   Future<void> deleteViaggioCategorieByViaggioId(int id) async {
@@ -223,9 +243,25 @@ class DatabaseHelper {
       where: 'viaggio = ?',
       whereArgs: [id],
     );
-
   }
 
+  Future<void> deleteViaggio(int id) async {
+    final db = await database;
+    await db.delete(
+      'viaggio',
+      where: 'id_viaggio = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> deleteFoto(String path) async {
+    final db = await database;
+    await db.delete(
+      'foto',
+      where: 'path = ?',
+      whereArgs: [path],
+    );
+  }
 
   Future<List<viaggio>> getViaggi() async {
     final db = await database;
@@ -332,7 +368,7 @@ class DatabaseHelper {
       );
     } else {
       // la foto non esiste quindi inseriscila
-    insertFoto(f);
+      insertFoto(f);
     }
   }
 
@@ -378,38 +414,15 @@ class DatabaseHelper {
     }
   }
 
-
-
-  Future<void> deleteViaggio(int id) async {
-    final db = await database;
-    await db.delete(
-      'viaggio',
-      where: 'id_viaggio = ?',
-      whereArgs: [id],
-    );
-  }
-
-
-  Future<void> deleteFoto(String path) async {
-    final db = await database;
-    await db.delete(
+  Future<int> getIdFoto(String path) async{
+    final db = await instance.database;
+    final maps = await db.query(
       'foto',
       where: 'path = ?',
       whereArgs: [path],
     );
+    return foto.fromMap(maps.first).id_foto;
   }
-
-
-
-Future<int> getIdFoto(String path) async{
-  final db = await instance.database;
-  final maps = await db.query(
-    'foto',
-    where: 'path = ?',
-    whereArgs: [path],
-  );
-  return foto.fromMap(maps.first).id_foto;
-}
 
   Future<List<foto>> getFotoByViaggioId(int viaggio) async {
     final db = await instance.database;
@@ -479,6 +492,8 @@ Future<int> getIdFoto(String path) async{
       return 0; // Restituisci 0 se non ci sono risultati
     }
   }
+
+  // metodo utilizzato per il controllo su viaggi la cui intersezione combacia sul range di date
   Future<int> verifyDateTrip(String dataInizio, String dataFine) async {
     final db = await database;
 
@@ -526,27 +541,7 @@ Future<int> getIdFoto(String path) async{
     return id ?? 0;
   }
 
-  Future<void> deleteReview(int idViaggio) async{
-    final db = await database;
-    await db.delete(
-      'recensione',
-      where: 'viaggio = ?',
-      whereArgs: [idViaggio],
-    );
-  }
-
-  Future<void> deleteCategory(categoria c) async{
-    final db = await database;
-    final nomeCat = c.nome;
-    await db.delete(
-      'categoria',
-      where: 'nome = ?',
-      whereArgs: [nomeCat],
-    );
-  }
-
-
-  }
+}
 
 
 
