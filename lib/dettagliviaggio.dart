@@ -55,7 +55,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
 
     _loadDestinazioni();
     _loadCategorie();
-    _loadImages(); // Carica l'immagine attuale
+    _loadImages();
     _loadRecensione();
   }
 
@@ -139,8 +139,15 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
     }
   }
 
-  Future<void> _saveChanges() async {
+   Future<void> _saveChanges() async {
     if (_formKey.currentState?.validate() ?? false) {
+      if (selectedCategorie.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Seleziona almeno una categoria')),
+        );
+        return;
+      }
+
       final updatedViaggio = viaggio(
         id_viaggio: widget.v.id_viaggio,
         titolo: _titoloController.text,
@@ -182,12 +189,11 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
           await DatabaseHelper.instance.UpdateRecensione(Recensione);
         }
 
-      }else if(_recensioneController.text.isEmpty && idRec!=0){ // se tolgo la recensione di un viaggio la elimina anche dal db
+      } else if(_recensioneController.text.isEmpty && idRec != 0) {
         await DatabaseHelper.instance.deleteReview(widget.v.id_viaggio);
       }
 
-      // se un viaggio diventa pianificato eliminiamo la recensione presente
-      if(canAddReview==false) {
+      if (!canAddReview) {
         await DatabaseHelper.instance.deleteReview(widget.v.id_viaggio);
       }
 
@@ -196,8 +202,8 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
     }
   }
 
+
   Future<void> _saveImages(int idViaggio) async {
-    // Get the last used ID for photos
     int lastPhotoId = await DatabaseHelper.instance.getPhotoId() ?? 0;
 
     // permetto di inserire le foto aggiunte alla collezione di foto
@@ -223,7 +229,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
   }
 
   Future<void> _showCategorieDialog() async {
-    //final selectedCategorieTemp = List<categoria>.from(_selectedCategorie);
+    final List<categoria> selectedCategorieTemp = List<categoria>.from(selectedCategorie);
     await showDialog(
       context: context,
       builder: (context) {
@@ -236,15 +242,15 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                   children: _categorie.map((categoria) {
                     return CheckboxListTile(
                       title: Text(categoria.nome),
-                      value: selectedCategorie.contains(categoria),
+                      value: selectedCategorieTemp.any((c) => c.nome == categoria.nome),
                       onChanged: (bool? value) {
                         setDialogState(() {
                           if (value == true) {
-                            if (!selectedCategorie.contains(categoria)) {
-                              selectedCategorie.add(categoria);
+                            if (!selectedCategorieTemp.any((c) => c.nome == categoria.nome)) {
+                              selectedCategorieTemp.add(categoria);
                             }
                           } else {
-                            selectedCategorie.remove(categoria);
+                            selectedCategorieTemp.removeWhere((c) => c.nome == categoria.nome);
                           }
                         });
                       },
@@ -257,8 +263,14 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                   child: const Text('OK'),
                   onPressed: () {
                     setState(() {
-                      selectedCategorie;
+                      selectedCategorie = List<categoria>.from(selectedCategorieTemp);
                     });
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Annulla'),
+                  onPressed: () {
                     Navigator.of(context).pop();
                   },
                 ),
@@ -269,7 +281,6 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
       },
     );
   }
-
 
   void _pickImages() async {
     final pickedFiles = await ImagePicker().pickMultiImage(
@@ -323,7 +334,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // Align items to the start of the column
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_currentImagePaths.isNotEmpty)
                   GridView.builder(
@@ -333,7 +344,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
                       mainAxisSpacing: 8.0,
                     ),
                     shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(), // Disable scrolling for the GridView
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: _currentImagePaths.length,
                     itemBuilder: (context, index) {
                       return Stack(
