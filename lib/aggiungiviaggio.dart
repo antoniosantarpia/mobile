@@ -109,6 +109,9 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
         throw Exception('Per favore seleziona una destinazione');
       }
 
+      if(await DatabaseHelper.instance.verifyDateTrip(dataInizio, dataFine) == 0){
+
+      }
       final newViaggio = viaggio(
         id_viaggio: newId,
         titolo: titolo,
@@ -129,12 +132,6 @@ class _AggiungiViaggioState extends State<AggiungiViaggio> {
         );
         await DatabaseHelper.instance.insertViaggioCategoria(newViaggioCategoria);
       }
-
-      // elimina una categoria se non è associata a nessun viaggio
-        //await DatabaseHelper.instance.verifyCategory();
-      //await DatabaseHelper.instance.deleteCategory();
-          
-
 
       final lastidFoto = await DatabaseHelper.instance.getLastImgId();
       int newFotoId = lastidFoto + 1;

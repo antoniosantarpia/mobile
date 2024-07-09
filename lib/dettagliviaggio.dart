@@ -22,7 +22,7 @@ class DettaglioViaggio extends StatefulWidget {
 
 class _DettaglioViaggioState extends State<DettaglioViaggio> {
   final _formKey = GlobalKey<FormState>();
-  final _categorieKey = GlobalKey<FormFieldState>(); // Aggiungi questa chiave
+  final _categorieKey = GlobalKey<FormFieldState>();
   late TextEditingController _titoloController;
   late TextEditingController _dataInizioController;
   late TextEditingController _dataFineController;
@@ -172,14 +172,16 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
             testo: _recensioneController.text,
             viaggio: widget.v.id_viaggio,
           );
+          await DatabaseHelper.instance.insertRecensione(Recensione);
         } else {
           Recensione = recensione(
             id_recensione: idRec,
             testo: _recensioneController.text,
             viaggio: widget.v.id_viaggio,
           );
+          await DatabaseHelper.instance.UpdateRecensione(Recensione);
         }
-        await DatabaseHelper.instance.saveOrUpdateRecensione(Recensione);
+
       }else if(_recensioneController.text.isEmpty && idRec!=0){ // se tolgo la recensione di un viaggio la elimina anche dal db
         await DatabaseHelper.instance.deleteReview(widget.v.id_viaggio);
       }
@@ -300,6 +302,7 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
 
   @override
   Widget build(BuildContext context) {
+    canAddReview = _dataFine != null && _dataFine!.isBefore(DateTime.now());
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.v.titolo),
@@ -314,159 +317,157 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              if (_currentImagePaths.isNotEmpty)
-                GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // Numero di immagini per riga
-                    crossAxisSpacing: 8.0,
-                    mainAxisSpacing: 8.0,
-                  ),
-                  shrinkWrap: true,
-                  itemCount: _currentImagePaths.length,
-                  itemBuilder: (context, index) {
-                    return Stack(
-                      children: [
-                        Image.file(
-                          File(_currentImagePaths[index]),
-                          fit: BoxFit.cover,
-                        ),
-                        Positioned(
-                          right: 0,
-                          child: IconButton(
-                            icon: const Icon(Icons.remove_circle, color: Colors.red),
-                            onPressed: () => _removeImage(index),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, // Align items to the start of the column
+              children: [
+                if (_currentImagePaths.isNotEmpty)
+                  GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, // Numero di immagini per riga
+                      crossAxisSpacing: 8.0,
+                      mainAxisSpacing: 8.0,
+                    ),
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(), // Disable scrolling for the GridView
+                    itemCount: _currentImagePaths.length,
+                    itemBuilder: (context, index) {
+                      return Stack(
+                        children: [
+                          Image.file(
+                            File(_currentImagePaths[index]),
+                            fit: BoxFit.cover,
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ElevatedButton(
-                onPressed: _pickImages,
-                child: Text('Aggiungi Immagini (${_currentImagePaths.length})'),
-              ),
-              TextFormField(
-                controller: _titoloController,
-                decoration: const InputDecoration(labelText: 'Titolo'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Inserisci un titolo';
-                  }
-                  return null;
-                },
-              ),
-              GestureDetector(
-                onTap: () => _selectDate(context, _dataInizioController, isStartDate: true),
-                child: AbsorbPointer(
-                  child: TextFormField(
-                    controller: _dataInizioController,
-                    decoration: const InputDecoration(labelText: 'Data Inizio'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Inserisci una data di inizio';
-                      }
-                      return null;
+                          Positioned(
+                            right: 0,
+                            child: IconButton(
+                              icon: const Icon(Icons.remove_circle, color: Colors.red),
+                              onPressed: () => _removeImage(index),
+                            ),
+                          ),
+                        ],
+                      );
                     },
                   ),
+                ElevatedButton(
+                  onPressed: _pickImages,
+                  child: Text('Aggiungi Immagini (${_currentImagePaths.length})'),
                 ),
-              ),
-              GestureDetector(
-                onTap: () => _selectDate(context, _dataFineController, isStartDate: false),
-                child: AbsorbPointer(
-                  child: TextFormField(
-                    controller: _dataFineController,
-                    decoration: const InputDecoration(labelText: 'Data Fine'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Inserisci una data di fine';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-              DropdownButtonFormField<String>(
-                value: _selectedDestinazione,
-                decoration: const InputDecoration(labelText: 'Destinazione'),
-                items: _destinazioni.map((destinazione d) {
-                  return DropdownMenuItem<String>(
-                    value: d.nome,
-                    child: Text(d.nome),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDestinazione = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Seleziona una destinazione';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _itinerarioController,
-                decoration: const InputDecoration(labelText: 'Itinerario'),
-              ),
-              TextFormField(
-                controller: _noteController,
-                decoration: const InputDecoration(labelText: 'Note'),
-              ),
-              ListTile(
-                title: const Text('Categorie Viaggio'),
-                trailing: const Icon(Icons.arrow_drop_down),
-                onTap: _showCategorieDialog,
-              ),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: selectedCategorie.map((categoria) {
-                  return Chip(
-                    label: Text(categoria.nome),
-                    padding: const EdgeInsets.all(10),
-                    onDeleted: () {
-                      setState(() {
-                        selectedCategorie.remove(categoria);
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-              if (_dataFine != null && _dataFine!.isBefore(DateTime.now()))
                 TextFormField(
-                  controller: _recensioneController,
-                  decoration: const InputDecoration(labelText: 'Recensione'),
-                  maxLines: 4,
+                  controller: _titoloController,
+                  decoration: const InputDecoration(labelText: 'Titolo'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Inserisci una recensione';
+                      return 'Inserisci un titolo';
                     }
                     return null;
                   },
                 ),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState?.validate() ?? false) {
-                    if (_dataInizio != null && _dataFine != null && _dataFine!.isBefore(_dataInizio!)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('La data di fine deve essere successiva alla data di inizio')),
-                      );
-                    } else {
-                      _saveChanges();
+                GestureDetector(
+                  onTap: () => _selectDate(context, _dataInizioController, isStartDate: true),
+                  child: AbsorbPointer(
+                    child: TextFormField(
+                      controller: _dataInizioController,
+                      decoration: const InputDecoration(labelText: 'Data Inizio'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Inserisci una data di inizio';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _selectDate(context, _dataFineController, isStartDate: false),
+                  child: AbsorbPointer(
+                    child: TextFormField(
+                      controller: _dataFineController,
+                      decoration: const InputDecoration(labelText: 'Data Fine'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Inserisci una data di fine';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ),
+                DropdownButtonFormField<String>(
+                  value: _selectedDestinazione,
+                  decoration: const InputDecoration(labelText: 'Destinazione'),
+                  items: _destinazioni.map((destinazione d) {
+                    return DropdownMenuItem<String>(
+                      value: d.nome,
+                      child: Text(d.nome),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedDestinazione = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Seleziona una destinazione';
                     }
-                  }
-                },
-                child: const Text('Salva Modifiche'),
-              ),
-            ],
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: _itinerarioController,
+                  decoration: const InputDecoration(labelText: 'Itinerario'),
+                ),
+                TextFormField(
+                  controller: _noteController,
+                  decoration: const InputDecoration(labelText: 'Note'),
+                ),
+                ListTile(
+                  title: const Text('Categorie Viaggio'),
+                  trailing: const Icon(Icons.arrow_drop_down),
+                  onTap: _showCategorieDialog,
+                ),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: selectedCategorie.map((categoria) {
+                    return Chip(
+                      label: Text(categoria.nome),
+                      padding: const EdgeInsets.all(10),
+                      onDeleted: () {
+                        setState(() {
+                          selectedCategorie.remove(categoria);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                if (canAddReview)
+                  TextFormField(
+                    controller: _recensioneController,
+                    decoration: const InputDecoration(labelText: 'Recensione'),
+                    maxLines: 4,
+                  ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState?.validate() ?? false) {
+                      if (_dataInizio != null && _dataFine != null && _dataFine!.isBefore(_dataInizio!)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('La data di fine deve essere successiva alla data di inizio')),
+                        );
+                      } else {
+                        _saveChanges();
+                      }
+                    }
+                  },
+                  child: const Text('Salva Modifiche'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

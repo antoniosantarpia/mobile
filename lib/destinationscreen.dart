@@ -43,11 +43,8 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
 
       final newDestination = destinazione(nome: nome, tripCount: 0);
 
-
-
       if (await DatabaseHelper.instance.insertDestinazione(newDestination) == 1) {
         _showErrorDialog('La destinazione esiste già.');
-
       }
       print('Added destination: $nome');
       _nomeController.clear();
@@ -160,7 +157,8 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
           final result = await showDialog<String>(
             context: context,
             builder: (context) {
-              return AlertDialog(
+              return SingleChildScrollView(
+                child: AlertDialog(
                 title: const Text('Aggiungi destinazione'),
                 content: TextField(
                   controller: _nomeController,
@@ -180,6 +178,7 @@ class _DestinationsScreenState extends State<DestinationsScreen> {
                     child: const Text('Aggiungi'),
                   ),
                 ],
+                ),
               );
             },
           );

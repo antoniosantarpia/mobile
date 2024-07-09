@@ -131,14 +131,27 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> insertCategoria(categoria categoria) async {
+  Future<int> insertCategoria(categoria categoria) async {
     final db = await database;
-    await db.insert(
-      'categoria',
-      categoria.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    final newNome = categoria.nome;
+
+    final existingCategory = await db.rawQuery('''
+        SELECT nome
+        FROM categoria c
+        WHERE LOWER(c.nome) = LOWER(?)''', [newNome]);
+
+    if(existingCategory.isEmpty){
+      await db.insert(
+        'categoria',
+        categoria.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+      return 0;
+    } else {
+      return 1;
+    }
   }
+
 
   Future<void> insertViaggioCategoria(viaggio_categoria viaggioCategoria) async {
     final db = await database;
@@ -300,14 +313,14 @@ class DatabaseHelper {
   Future<void> saveOrUpdateFoto(foto f) async {
     final db = await database;
 
-    // Step 1: Check if the foto exists
+    // contrlla se la foto esiste
     final List<Map<String, dynamic>> maps = await db.query(
       'foto',
       where: 'id_foto = ?',
       whereArgs: [f.id_foto],
     );
 
-    // Step 2: Update if exists, insert otherwise
+    // aggiorna se esiste
     if (maps.isNotEmpty) {
       // Foto exists, update it
       await db.update(
@@ -317,25 +330,42 @@ class DatabaseHelper {
         whereArgs: [f.id_foto],
       );
     } else {
-      // Foto does not exist, insert it
+      // la foto non esiste quindi inseriscila
     insertFoto(f);
     }
   }
 
+// Metodo per ottenere i dati dei viaggi per il grafico
+  Future<List<Map<String, dynamic>>> getTripDataForChart() async {
+    final db = await database;
+    final DateTime now = DateTime.now();
 
-  Future<void> saveOrUpdateRecensione(recensione r) async {
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    SELECT 
+      strftime('%Y-%m', data_inizio) as month_year, 
+      COUNT(*) as count
+    FROM viaggio
+    WHERE data_fine IS NOT NULL
+      AND data_fine <= '${now.toIso8601String()}'
+    GROUP BY strftime('%Y-%m', data_inizio)
+    ORDER BY strftime('%Y-%m', data_inizio) ASC
+  ''');
+
+    return maps;
+  }
+
+  Future<void> UpdateRecensione(recensione r) async {
     final db = await database;
 
-    // Step 1: Check if the foto exists
+    // verifica se la recensione esiste
     final List<Map<String, dynamic>> maps = await db.query(
       'recensione',
       where: 'id_recensione = ?',
       whereArgs: [r.id_recensione],
     );
 
-    // Step 2: Update if exists, insert otherwise
+    // aggiorna la recensione se esiste
     if (maps.isNotEmpty) {
-      // Foto exists, update it
       await db.update(
         'recensione',
         r.toMap(),
@@ -343,10 +373,10 @@ class DatabaseHelper {
         whereArgs: [r.id_recensione],
       );
     } else {
-      // Foto does not exist, insert it
-      insertRecensione(r);
+      throw Exception('Recensione non trovata'); // Lancia un'eccezione se la recensione non esiste
     }
   }
+
 
 
   Future<void> deleteViaggio(int id) async {
@@ -438,15 +468,30 @@ Future<int> getIdFoto(String path) async{
   Future<int> getRecIdByViaggio(int idViaggio) async{
     final db = await database;
     final result = await db.rawQuery('''
-      SELECT viaggio
+      SELECT id_recensione
       FROM recensione
       WHERE viaggio = $idViaggio
     ''');
     if (result.isNotEmpty) {
-      return (result.first['viaggio'] as int?) ?? 0; // Restituisci 0 se il valore è nullo
+      return (result.first['id_recensione'] as int?) ?? 0; // Restituisci 0 se il valore è nullo
     } else {
       return 0; // Restituisci 0 se non ci sono risultati
     }
+  }
+
+  Future<int> verifyDateTrip(String dataInizio, String dataFine) async{
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT *
+      FROM viaggio v
+      WHERE 
+    ''');
+    if (result.isNotEmpty) {
+      return (result.first['id_recensione'] as int?) ?? 0; // Restituisci 0 se il valore è nullo
+    } else {
+      return 0; // Restituisci 0 se non ci sono risultati
+    }
+
   }
 
   Future<int> verifyCategory(categoria c) async{

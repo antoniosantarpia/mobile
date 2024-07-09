@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: Colors.white,
           appBarTheme: const AppBarTheme(
             toolbarHeight: 80,
-            backgroundColor: Color.fromRGBO(227, 186, 245, 1),
+            backgroundColor: Color.fromRGBO(163, 227, 216, 1.0),
           ),
         ),
         debugShowCheckedModeBanner: false,
@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const StatisticsScreen()), // Naviga alla schermata delle statistiche
+                  MaterialPageRoute(builder: (context) => StatisticsScreen()), // Naviga alla schermata delle statistiche
                 );
               },
               style: ElevatedButton.styleFrom(

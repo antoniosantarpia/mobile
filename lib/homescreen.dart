@@ -40,9 +40,10 @@ class _HomePageContentState extends State<HomePageContent> {
     // Trova il viaggio più vicino alla data attuale come "Prossimo Viaggio".
     DateTime now = DateTime.now();
     for (var viaggio in viaggiList) {
-      if (prossimoViaggio == null ||
-          viaggio.data_inizio.difference(now).abs().compareTo(prossimoViaggio.data_inizio.difference(now).abs()) < 0) {
-        prossimoViaggio = viaggio;
+      if (viaggio.data_inizio.isAfter(now) || viaggio.data_inizio.isAtSameMomentAs(now)) {
+        if (prossimoViaggio == null || viaggio.data_inizio.isBefore(prossimoViaggio.data_inizio)) {
+          prossimoViaggio = viaggio;
+        }
       }
     }
 
@@ -69,7 +70,9 @@ class _HomePageContentState extends State<HomePageContent> {
 
       final newCategoria = categoria(nome: nome);
 
-      await DatabaseHelper.instance.insertCategoria(newCategoria);
+      if (await DatabaseHelper.instance.insertCategoria(newCategoria) == 1){
+        _showErrorDialog('La categoria esiste già.');
+      }
       print('Added category: $nome');
       _categoriaController.clear();
 
@@ -77,12 +80,37 @@ class _HomePageContentState extends State<HomePageContent> {
       print('Error adding category: $e');
     }
   }
+
+
+  void _showErrorDialog(String message) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Errore'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(message),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Viaggi'),
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -205,26 +233,28 @@ class _HomePageContentState extends State<HomePageContent> {
                       final result = await showDialog<String>(
                         context: context,
                         builder: (context) {
-                          return AlertDialog(
-                            title: const Text('Aggiungi categoria'),
-                            content: TextField(
-                              controller: _categoriaController,
-                              decoration: const InputDecoration(hintText: 'Nome categoria'),
+                          return SingleChildScrollView(
+                            child: AlertDialog(
+                              title: const Text('Aggiungi categoria'),
+                              content: TextField(
+                                controller: _categoriaController,
+                                decoration: const InputDecoration(hintText: 'Nome categoria'),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: const Text('Annulla'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(_categoriaController.text);
+                                  },
+                                  child: const Text('Aggiungi'),
+                                ),
+                              ],
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text('Annulla'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop(_categoriaController.text);
-                                },
-                                child: const Text('Aggiungi'),
-                              ),
-                            ],
                           );
                         },
                       );
@@ -242,6 +272,5 @@ class _HomePageContentState extends State<HomePageContent> {
       ),
     );
   }
-
-
 }
+
