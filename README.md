@@ -1,6 +1,8 @@
 # Travel Manager
 
-An application for trips tracking
+ > An application for trips tracking </br>
+
+![MMAS (820 x 360 px)](https://github.com/user-attachments/assets/45541839-efad-4f02-82bf-7c81a8f882b3)
 
 ## Setup
 
