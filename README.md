@@ -6,6 +6,8 @@
 <img src="https://github.com/user-attachments/assets/45541839-efad-4f02-82bf-7c81a8f882b3">
 </div>
 
+This project uses SQLite for local database management. To facilitate interaction with the database, a `database_helper.dart` has been implemented that manages the creation, opening and updating of the database.
+
 ## Setup
 
 Run the following commands from your terminal
