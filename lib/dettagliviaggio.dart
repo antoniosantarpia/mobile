@@ -22,7 +22,6 @@ class DettaglioViaggio extends StatefulWidget {
 
 class _DettaglioViaggioState extends State<DettaglioViaggio> {
   final _formKey = GlobalKey<FormState>();
-  final _categorieKey = GlobalKey<FormFieldState>();
   late TextEditingController _titoloController;
   late TextEditingController _dataInizioController;
   late TextEditingController _dataFineController;
@@ -36,7 +35,6 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
   List<destinazione> _destinazioni = [];
   List<categoria> selectedCategorie = [];
   List<categoria> _categorie = [];
-  String? _recensione;
   List<String> _currentImagePaths = []; // Aggiungi questo campo per l'immagine attuale
   List<String> _previousImagePaths = []; // Campo per il percorso dell'immagine precedente
   bool canAddReview = false;
@@ -86,7 +84,6 @@ class _DettaglioViaggioState extends State<DettaglioViaggio> {
     try {
       final rec = await DatabaseHelper.instance.getRecensione(widget.v.id_viaggio);
       setState(() {
-        _recensione = rec;
         _recensioneController = TextEditingController(text: rec);
       });
     } catch (e) {
