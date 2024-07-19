@@ -1,16 +1,35 @@
-# prova
+# Travel Manager
 
-A new Flutter project.
+An application for trips tracking
 
-## Getting Started
+## Setup
 
-This project is a starting point for a Flutter application.
+Run the following commands from your terminal
 
-A few resources to get you started if this is your first Flutter project:
+1. `git clone https://github.com/floranguyen0/mmas-money-tracker` to clone this repository
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+2. `flutter pub get` in the project root directory to install all the required dependencies.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Screenshots
+
+<table width="100%">
+  <tbody>
+    <tr>
+      <td width="1%"><img src=""/></td>
+      <td width="1%"><img src=""/></td>
+       <td width="1%"><img src=""/></td>
+    </tr>
+    <tr>
+      <td width="1%"><img src=""/></td>
+      <td width="1%"><img src=""/></td>
+       <td width="1%"><img src=""/></td>
+    </tr>
+    <tr>
+      <td width="1%"><img src=""/></td>
+      <td width="1%"><img src=""/></td>
+       <td width="1%"><img src=""/></td>
+    </tr>
+  </tbody>
+</table>
+
+
